@@ -1,7 +1,7 @@
 from pydantic import BaseModel, Field
 from src.config.base_yield.base import BaseYield
 from src.config.resources.base import BaseResource
-
+import pygame
 
 class BaseTerrain(BaseModel):
     """
@@ -28,3 +28,6 @@ class BaseTerrain(BaseModel):
 
     # Give the resource, if any, that is on this terrain
     resource: BaseResource | None
+
+    # Give the base image for this terrain
+    base_image: pygame.Surface
