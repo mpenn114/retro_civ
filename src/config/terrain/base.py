@@ -20,6 +20,9 @@ class BaseTerrain(BaseModel):
     # Determine if the terrain is land or sea
     is_land: bool
 
+    # Determine if the terrain blocks sight and ranged attacks
+    blocks: bool = False
+
     # Give the base yield of the terrain (before any resources are added)
     base_yield: AdditiveYield
 

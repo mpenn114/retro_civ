@@ -10,6 +10,7 @@ JungleTerrain = BaseTerrain(
     is_land=True,
     base_yield=AdditiveYield(food=2, production=1, gold=1),
     base_image=TERRAIN_IMAGES.jungle,
+    blocks=True,
 )
 
 JungleRiverTerrain = BaseTerrain(
@@ -19,6 +20,7 @@ JungleRiverTerrain = BaseTerrain(
     is_land=True,
     base_yield=AdditiveYield(food=3, production=2, gold=2),
     base_image=TERRAIN_IMAGES.jungle_river,
+    blocks=True,
 )
 
 __all__ = [JungleTerrain, JungleRiverTerrain]

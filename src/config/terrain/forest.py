@@ -10,6 +10,7 @@ ForestTerrain = BaseTerrain(
     is_land=True,
     base_yield=AdditiveYield(food=1, production=1),
     base_image=TERRAIN_IMAGES.forest,
+    blocks=True,
 )
 
 ForestRiverTerrain = BaseTerrain(
@@ -19,6 +20,7 @@ ForestRiverTerrain = BaseTerrain(
     is_land=True,
     base_yield=AdditiveYield(food=2, production=2, gold=1),
     base_image=TERRAIN_IMAGES.forest_river,
+    blocks=True,
 )
 
 __all__ = [ForestTerrain, ForestRiverTerrain]

@@ -2,6 +2,7 @@ from pydantic import BaseModel, model_validator
 from .rural import BaseRural
 from .city import BaseCity
 from .coordinates import BaseCoordinates
+from src.config.units import BaseUnit
 
 
 class BaseTile(BaseModel):
@@ -15,6 +16,9 @@ class BaseTile(BaseModel):
 
     # Add the city details if relevant
     city_details: BaseCity | None
+
+    # Add the unit details if relevant
+    unit_details: BaseUnit | None
 
     # Add the rural details (always relevant)
     rural_details: BaseRural

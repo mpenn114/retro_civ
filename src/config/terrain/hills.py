@@ -10,6 +10,7 @@ HillsTerrain = BaseTerrain(
     is_land=True,
     base_yield=AdditiveYield(food=1, production=2, gold=1),
     base_image=TERRAIN_IMAGES.hills,
+    blocks=True,
 )
 
 __all__ = [HillsTerrain]

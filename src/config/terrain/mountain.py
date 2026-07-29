@@ -10,6 +10,7 @@ MountainTerrain = BaseTerrain(
     is_land=True,
     base_yield=AdditiveYield(production=3, gold=1),
     base_image=TERRAIN_IMAGES.mountain,
+    blocks=True,
 )
 
 __all__ = [MountainTerrain]
