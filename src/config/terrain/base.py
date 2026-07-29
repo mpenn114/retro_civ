@@ -3,6 +3,7 @@ from src.config.base_yield.base import BaseYield
 from src.config.resources.base import BaseResource
 import pygame
 
+
 class BaseTerrain(BaseModel):
     """
     Define a base class for storing different types of terrain
