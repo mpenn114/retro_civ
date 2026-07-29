@@ -27,6 +27,7 @@ class TerrainImages:
     plains_river: pygame.Surface
     plains: pygame.Surface
     shallow_ocean: pygame.Surface
+    snow: pygame.Surface
     tundra: pygame.Surface
 
 
@@ -45,6 +46,7 @@ TERRAIN_IMAGES = TerrainImages(
     plains_river=pygame.image.load(ASSETS_PATH / "plains_river.png").convert_alpha(),
     plains=pygame.image.load(ASSETS_PATH / "plains.png").convert_alpha(),
     shallow_ocean=pygame.image.load(ASSETS_PATH / "shallow_ocean.png").convert_alpha(),
+    snow=pygame.image.load(ASSETS_PATH / "snow.png").convert_alpha(),
     tundra=pygame.image.load(ASSETS_PATH / "tundra.png").convert_alpha(),
 )
 

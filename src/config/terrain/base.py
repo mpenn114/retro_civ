@@ -13,10 +13,7 @@ class BaseTerrain(BaseModel):
     name: str
 
     # Give the movement cost of the terrain
-    movement_cost: int = Field(ge=0, le=4)
-
-    # Determine if the terrain ends movement
-    ends_movement: bool = False
+    movement_cost: float = Field(ge=0, le=4)
 
     # Give the defensive multiplier of the terrain
     defensive_multiplier: float = Field(ge=0, le=3)
@@ -28,7 +25,7 @@ class BaseTerrain(BaseModel):
     base_yield: BaseYield
 
     # Give the resource, if any, that is on this terrain
-    resource: BaseResource | None
+    resource: BaseResource | None = None
 
     # Give the base image for this terrain
     base_image: pygame.Surface
