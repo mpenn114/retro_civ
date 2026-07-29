@@ -1,6 +1,5 @@
 from pydantic import BaseModel, Field
-from src.config.base_yield.base import BaseYield
-from src.config.resources.base import BaseResource
+from src.config.base_yield.base import AdditiveYield
 import pygame
 
 
@@ -22,10 +21,7 @@ class BaseTerrain(BaseModel):
     is_land: bool
 
     # Give the base yield of the terrain (before any resources are added)
-    base_yield: BaseYield
-
-    # Give the resource, if any, that is on this terrain
-    resource: BaseResource | None = None
+    base_yield: AdditiveYield
 
     # Give the base image for this terrain
     base_image: pygame.Surface

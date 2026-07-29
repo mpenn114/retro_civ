@@ -1,3 +1,4 @@
+from .base import BaseTerrain
 from .coast import CoastTerrain
 from .forest import ForestRiverTerrain, ForestTerrain
 from .grass import GrassRiverTerrain, GrassTerrain
@@ -11,6 +12,7 @@ from .tundra import TundraTerrain
 
 
 __all__ = [
+    BaseTerrain,
     CoastTerrain,
     ForestRiverTerrain,
     ForestTerrain,

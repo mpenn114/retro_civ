@@ -1,5 +1,5 @@
 from .base import BaseTerrain
-from src.config.base_yield.base import BaseYield
+from src.config.base_yield.base import AdditiveYield
 from src.art import TERRAIN_IMAGES
 
 
@@ -8,7 +8,7 @@ DeepOceanTerrain = BaseTerrain(
     movement_cost=1,
     defensive_multiplier=1.0,
     is_land=True,
-    base_yield=BaseYield(food=2),
+    base_yield=AdditiveYield(food=2),
     base_image=TERRAIN_IMAGES.deep_ocean,
 )
 
@@ -17,7 +17,7 @@ ShallowOceanTerrain = BaseTerrain(
     movement_cost=1,
     defensive_multiplier=1.0,
     is_land=True,
-    base_yield=BaseYield(food=2),
+    base_yield=AdditiveYield(food=2),
     base_image=TERRAIN_IMAGES.shallow_ocean,
 )
 
