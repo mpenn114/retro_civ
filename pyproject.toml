@@ -1,0 +1,11 @@
+[project]
+name = "retro-civ"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+requires-python = ">=3.13"
+dependencies = [
+    "pre-commit>=4.6.1",
+    "pygame>=2.6.1",
+    "ty>=0.0.64",
+]
