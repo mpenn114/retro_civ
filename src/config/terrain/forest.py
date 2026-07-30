@@ -23,4 +23,8 @@ ForestRiverTerrain = BaseTerrain(
     blocks=True,
 )
 
-__all__ = [ForestTerrain, ForestRiverTerrain]
+ForestRiverCornerTerrain = ForestRiverTerrain.with_image(
+    TERRAIN_IMAGES.forest_river_corner
+)
+
+__all__ = [ForestTerrain, ForestRiverTerrain, ForestRiverCornerTerrain]

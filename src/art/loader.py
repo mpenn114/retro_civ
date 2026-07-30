@@ -1,4 +1,4 @@
-from dataclasses import dataclass
+from dataclasses import dataclass, fields
 from pathlib import Path
 
 import pygame
@@ -15,16 +15,23 @@ class TerrainImages:
     """
 
     coast_corner: pygame.Surface
+    coast_river: pygame.Surface
     coast: pygame.Surface
     deep_ocean: pygame.Surface
+    desert: pygame.Surface
+    forest_river_corner: pygame.Surface
     forest_river: pygame.Surface
     forest: pygame.Surface
+    grass_river_corner: pygame.Surface
     grass_river: pygame.Surface
     grass: pygame.Surface
+    hills_river_source: pygame.Surface
     hills: pygame.Surface
+    jungle_river_corner: pygame.Surface
     jungle_river: pygame.Surface
     jungle: pygame.Surface
     mountain: pygame.Surface
+    plains_river_corner: pygame.Surface
     plains_river: pygame.Surface
     plains: pygame.Surface
     shallow_ocean: pygame.Surface
@@ -43,43 +50,29 @@ class UnitImages:
     scout: pygame.Surface
 
 
-TERRAIN_IMAGES = TerrainImages(
-    coast_corner=pygame.image.load(
-        TERRAIN_ASSETS_PATH / "coast_corner.png"
-    ).convert_alpha(),
-    coast=pygame.image.load(TERRAIN_ASSETS_PATH / "coast.png").convert_alpha(),
-    deep_ocean=pygame.image.load(
-        TERRAIN_ASSETS_PATH / "deep_ocean.png"
-    ).convert_alpha(),
-    forest_river=pygame.image.load(
-        TERRAIN_ASSETS_PATH / "forest_river.png"
-    ).convert_alpha(),
-    forest=pygame.image.load(TERRAIN_ASSETS_PATH / "forest.png").convert_alpha(),
-    grass_river=pygame.image.load(
-        TERRAIN_ASSETS_PATH / "grass_river.png"
-    ).convert_alpha(),
-    grass=pygame.image.load(TERRAIN_ASSETS_PATH / "grass.png").convert_alpha(),
-    hills=pygame.image.load(TERRAIN_ASSETS_PATH / "hills.png").convert_alpha(),
-    jungle_river=pygame.image.load(
-        TERRAIN_ASSETS_PATH / "jungle_river.png"
-    ).convert_alpha(),
-    jungle=pygame.image.load(TERRAIN_ASSETS_PATH / "jungle.png").convert_alpha(),
-    mountain=pygame.image.load(TERRAIN_ASSETS_PATH / "mountain.png").convert_alpha(),
-    plains_river=pygame.image.load(
-        TERRAIN_ASSETS_PATH / "plains_river.png"
-    ).convert_alpha(),
-    plains=pygame.image.load(TERRAIN_ASSETS_PATH / "plains.png").convert_alpha(),
-    shallow_ocean=pygame.image.load(
-        TERRAIN_ASSETS_PATH / "shallow_ocean.png"
-    ).convert_alpha(),
-    snow=pygame.image.load(TERRAIN_ASSETS_PATH / "snow.png").convert_alpha(),
-    tundra=pygame.image.load(TERRAIN_ASSETS_PATH / "tundra.png").convert_alpha(),
-)
+def _load_image_set[ImageSet](image_set: type[ImageSet], assets_path: Path) -> ImageSet:
+    """
+    Load every image an image set declares, taking each file name from its field name
 
-UNIT_IMAGES = UnitImages(
-    settler=pygame.image.load(UNIT_ASSETS_PATH / "settler.png").convert_alpha(),
-    warrior=pygame.image.load(UNIT_ASSETS_PATH / "warrior.png").convert_alpha(),
-    scout=pygame.image.load(UNIT_ASSETS_PATH / "scout.png").convert_alpha(),
-)
+    Args:
+        image_set (type[ImageSet]): The image set to fill
+        assets_path (Path): The directory the PNGs are read from
+
+    Returns:
+        ImageSet: The image set with every field loaded
+    """
+    return image_set(
+        **{
+            field.name: pygame.image.load(
+                assets_path / f"{field.name}.png"
+            ).convert_alpha()
+            for field in fields(image_set)  # ty: ignore
+        }
+    )
+
+
+TERRAIN_IMAGES = _load_image_set(TerrainImages, TERRAIN_ASSETS_PATH)
+
+UNIT_IMAGES = _load_image_set(UnitImages, UNIT_ASSETS_PATH)
 
 __all__ = [TERRAIN_IMAGES, UNIT_IMAGES]

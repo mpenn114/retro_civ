@@ -12,4 +12,15 @@ CoastTerrain = BaseTerrain(
     base_image=TERRAIN_IMAGES.coast,
 )
 
-__all__ = [CoastTerrain]
+CoastCornerTerrain = CoastTerrain.with_image(TERRAIN_IMAGES.coast_corner)
+
+CoastRiverTerrain = BaseTerrain(
+    name="Coast (River Mouth)",
+    movement_cost=0.5,
+    defensive_multiplier=1.25,
+    is_land=True,
+    base_yield=AdditiveYield(food=3, production=1, gold=2),
+    base_image=TERRAIN_IMAGES.coast_river,
+)
+
+__all__ = [CoastTerrain, CoastCornerTerrain, CoastRiverTerrain]

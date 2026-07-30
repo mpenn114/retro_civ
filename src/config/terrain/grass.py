@@ -21,4 +21,8 @@ GrassRiverTerrain = BaseTerrain(
     base_image=TERRAIN_IMAGES.grass_river,
 )
 
-__all__ = [GrassTerrain, GrassRiverTerrain]
+GrassRiverCornerTerrain = GrassRiverTerrain.with_image(
+    TERRAIN_IMAGES.grass_river_corner
+)
+
+__all__ = [GrassTerrain, GrassRiverTerrain, GrassRiverCornerTerrain]

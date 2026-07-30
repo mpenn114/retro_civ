@@ -21,4 +21,8 @@ PlainsRiverTerrain = BaseTerrain(
     base_image=TERRAIN_IMAGES.plains_river,
 )
 
-__all__ = [PlainsTerrain, PlainsRiverTerrain]
+PlainsRiverCornerTerrain = PlainsRiverTerrain.with_image(
+    TERRAIN_IMAGES.plains_river_corner
+)
+
+__all__ = [PlainsTerrain, PlainsRiverTerrain, PlainsRiverCornerTerrain]

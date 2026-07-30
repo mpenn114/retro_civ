@@ -13,4 +13,15 @@ HillsTerrain = BaseTerrain(
     blocks=True,
 )
 
-__all__ = [HillsTerrain]
+# Spring a river in the hills, which is where rivers on the map start before running downhill
+HillsRiverSourceTerrain = BaseTerrain(
+    name="Hills (River Source)",
+    movement_cost=1,
+    defensive_multiplier=1.75,
+    is_land=True,
+    base_yield=AdditiveYield(food=2, production=2, gold=2),
+    base_image=TERRAIN_IMAGES.hills_river_source,
+    blocks=True,
+)
+
+__all__ = [HillsTerrain, HillsRiverSourceTerrain]

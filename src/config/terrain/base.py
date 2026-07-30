@@ -1,4 +1,4 @@
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, ConfigDict, Field
 from src.config.base_yield.base import AdditiveYield
 import pygame
 
@@ -7,6 +7,9 @@ class BaseTerrain(BaseModel):
     """
     Define a base class for storing different types of terrain
     """
+
+    # Accept the pygame surface holding the sprite, which pydantic cannot validate itself
+    model_config = ConfigDict(arbitrary_types_allowed=True)
 
     # Give the human-readable name of the terrain
     name: str
@@ -28,3 +31,18 @@ class BaseTerrain(BaseModel):
 
     # Give the base image for this terrain
     base_image: pygame.Surface
+
+    def with_image(self, base_image: pygame.Surface) -> "BaseTerrain":
+        """
+        Give a copy of this terrain that differs only in the sprite drawn for it
+
+        Use this for tiles that play identically but are drawn differently, such as the corner
+        piece of a river or a coastline, so the two can never drift apart
+
+        Args:
+            base_image (pygame.Surface): The sprite the copy is drawn with
+
+        Returns:
+            BaseTerrain: The terrain with its sprite replaced
+        """
+        return self.model_copy(update={"base_image": base_image})

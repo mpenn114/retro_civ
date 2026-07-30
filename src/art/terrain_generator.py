@@ -2,6 +2,7 @@ import math
 import os
 import random
 from collections.abc import Callable
+from enum import StrEnum
 from pathlib import Path
 
 import pygame
@@ -22,11 +23,178 @@ RIVER_HALF_WIDTH = 2
 # Give the amplitude of the river meander in drawing pixels
 RIVER_MEANDER = 5
 
+# Give the row and column every river crosses a tile edge at, so any two river tiles laid
+# next to each other join up channel to channel
+RIVER_CROSSING = TILE_PIXELS // 2
+
+# Give the number of points a river centreline is sampled at before being rasterised
+RIVER_PATH_SAMPLES = 160
+
+# Give the row a river source wells up on
+RIVER_SOURCE_ROW = 12
+
+# Give the half-width of the pool a river source wells up into
+RIVER_SOURCE_POOL_HALF_WIDTH = 3.2
+
+# Give the half-width a stream leaves its source at
+RIVER_SOURCE_HALF_WIDTH = 1.3
+
+# Give the amplitude of the meander on a river source, kept gentle over the short run
+RIVER_SOURCE_MEANDER = 3
+
+# Give the half-width a river mouth flares out to where it meets the sea
+RIVER_MOUTH_HALF_WIDTH = 5.0
+
+# Give the amplitude of the meander on a river mouth
+RIVER_MOUTH_MEANDER = 2
+
+# Give the number of rows a river mouth is carried past the shoreline so it merges with the sea
+RIVER_MOUTH_OVERRUN = 4
+
+# Give how far fresh water is faded towards the sea colour by the time it reaches the waterline
+RIVER_MOUTH_FADE = 0.85
+
 # Give the row and column the shoreline sits at, so coast tiles join up along their edges
 SHORE_LINE = 20
 
 # Give the radius the shoreline is rounded by where it turns a corner
 SHORE_CORNER_RADIUS = 5
+
+
+class RiverForm(StrEnum):
+    """
+    Name the shapes a river can take across a single tile
+
+    Every form crosses a tile edge at RIVER_CROSSING and runs perpendicular to that edge as
+    it does so, which is what lets any two forms be laid side by side without a visible seam
+    """
+
+    # Carry no river at all
+    NONE = "none"
+
+    # Run from the top edge to the bottom edge
+    STRAIGHT = "straight"
+
+    # Turn from the top edge to the right edge
+    CORNER = "corner"
+
+    # Well up in the middle of the tile and run to the bottom edge only
+    SOURCE = "source"
+
+    # Run from the top edge and open out into the sea
+    MOUTH = "mouth"
+
+
+# Map each river form onto the suffix its tile is written under
+RIVER_FILE_SUFFIXES: dict[RiverForm, str] = {
+    RiverForm.NONE: "",
+    RiverForm.STRAIGHT: "_river",
+    RiverForm.CORNER: "_river_corner",
+    RiverForm.SOURCE: "_river_source",
+    RiverForm.MOUTH: "_river",
+}
+
+
+class RiverSample(BaseModel):
+    """
+    Describe the river channel at a single point along its centreline
+    """
+
+    # Give the horizontal position of the centreline
+    x: float
+
+    # Give the vertical position of the centreline
+    y: float
+
+    # Give the half-width of the channel at this point
+    half_width: float
+
+
+class RiverChannel:
+    """
+    Hold the pixels a river covers on a tile and answer questions about them
+    """
+
+    def __init__(
+        self,
+        pixels: set[tuple[int, int]],
+        source_point: tuple[int, int] | None = None,
+    ) -> None:
+        """
+        Store the rasterised channel
+
+        Args:
+            pixels (set[tuple[int, int]]): Every pixel the channel covers
+            source_point (tuple[int, int] | None): The point the river wells up at, if any
+        """
+        self.pixels = pixels
+        self.source_point = source_point
+
+    def __bool__(self) -> bool:
+        """
+        Report whether the tile carries a river at all
+
+        Returns:
+            bool: True when the channel covers at least one pixel
+        """
+        return bool(self.pixels)
+
+    def contains(self, x: int, y: int) -> bool:
+        """
+        Determine whether a pixel lies inside the channel
+
+        Args:
+            x (int): The horizontal position in the tile
+            y (int): The vertical position in the tile
+
+        Returns:
+            bool: True when the pixel is river water
+        """
+        return (x, y) in self.pixels
+
+    def is_bank(self, x: int, y: int) -> bool:
+        """
+        Determine whether a channel pixel sits against the land beside it
+
+        Args:
+            x (int): The horizontal position in the tile
+            y (int): The vertical position in the tile
+
+        Returns:
+            bool: True when the pixel borders land within the tile
+        """
+        # Ignore neighbours outside the tile so the rows a river crosses an edge on stay full
+        # width, leaving no dark line across the join between two tiles
+        neighbours = ((x - 1, y), (x + 1, y), (x, y - 1), (x, y + 1))
+
+        return any(
+            (neighbour_x, neighbour_y) not in self.pixels
+            for neighbour_x, neighbour_y in neighbours
+            if 0 <= neighbour_x < TILE_PIXELS and 0 <= neighbour_y < TILE_PIXELS
+        )
+
+    def is_clear(self, x: int, y: int, margin: int = 3) -> bool:
+        """
+        Determine whether a terrain feature may be placed without crowding the river
+
+        Args:
+            x (int): The horizontal position of the feature
+            y (int): The vertical position of the feature
+            margin (int): The clearance required around the channel
+
+        Returns:
+            bool: True when the position is far enough from the channel
+        """
+        if not self.pixels:
+            return True
+
+        # Reject the position when any pixel within the margin is water
+        for offset_y in range(-margin, margin + 1):
+            for offset_x in range(-margin, margin + 1):
+                if (x + offset_x, y + offset_y) in self.pixels:
+                    return False
+
+        return True
 
 
 class TilePalette(BaseModel):
@@ -61,8 +229,8 @@ class TileSpec(BaseModel):
     # Give the name of the feature drawing routine to apply over the base
     feature: str
 
-    # Determine whether a river variant of the tile should also be generated
-    has_river_variant: bool = False
+    # Give the river variants of the tile that should also be generated
+    river_forms: tuple[RiverForm, ...] = ()
 
 
 class TerrainTileGenerator:
@@ -73,6 +241,13 @@ class TerrainTileGenerator:
     # Give the colours used for river water on land tiles
     RIVER_CORE: RGB = (111, 189, 232)
     RIVER_EDGE: RGB = (74, 158, 212)
+
+    # Give the colour of the foam dashed over water
+    FOAM: RGB = (225, 240, 248)
+
+    # Name the river forms whose channel the feature routine paints itself, so the generic
+    # river pass leaves them alone
+    FEATURE_DRAWN_RIVER_FORMS = frozenset({RiverForm.MOUTH})
 
     def __init__(self, output_directory: Path) -> None:
         """
@@ -89,32 +264,44 @@ class TerrainTileGenerator:
         self.output_directory.mkdir(parents=True, exist_ok=True)
 
         # Map each feature name onto the method that draws it
-        self._feature_renderers = {
+        self._feature_renderers: dict[
+            str,
+            Callable[[pygame.Surface, TilePalette, random.Random, RiverChannel], None],
+        ] = {
             "flat": self._draw_flat,
             "mountain": self._draw_mountain,
             "forest": self._draw_forest,
             "jungle": self._draw_jungle,
             "hills": self._draw_hills,
+            "dunes": self._draw_dunes,
             "speckle": self._draw_speckle,
             "shore": self._draw_shore,
             "shore_corner": self._draw_shore_corner,
             "waves": self._draw_waves,
         }
 
+        # Map each river form onto the method that traces its centreline
+        self._river_path_builders: dict[RiverForm, Callable[[], list[RiverSample]]] = {
+            RiverForm.STRAIGHT: self._build_straight_river_path,
+            RiverForm.CORNER: self._build_corner_river_path,
+            RiverForm.SOURCE: self._build_source_river_path,
+            RiverForm.MOUTH: self._build_mouth_river_path,
+        }
+
     def generate_all(self) -> list[Path]:
         """
-        Generate every terrain tile, including river variants where relevant
+        Generate every terrain tile, including each river variant where relevant
 
         Returns:
             list[Path]: The paths of every PNG written
         """
         written_paths: list[Path] = []
 
-        # Draw each terrain, then its river variant if it has one
+        # Draw each terrain plain, then once more for every river variant it carries
         for spec in self._build_tile_specs():
-            written_paths.append(self._render_and_save(spec, with_river=False))
-            if spec.has_river_variant:
-                written_paths.append(self._render_and_save(spec, with_river=True))
+            written_paths.append(self._render_and_save(spec, RiverForm.NONE))
+            for river_form in spec.river_forms:
+                written_paths.append(self._render_and_save(spec, river_form))
 
         return written_paths
 
@@ -139,7 +326,7 @@ class TerrainTileGenerator:
             TileSpec(
                 name="plains",
                 feature="flat",
-                has_river_variant=True,
+                river_forms=(RiverForm.STRAIGHT, RiverForm.CORNER),
                 palette=TilePalette(
                     base=(201, 185, 106),
                     shade=(172, 156, 84),
@@ -150,7 +337,7 @@ class TerrainTileGenerator:
             TileSpec(
                 name="grass",
                 feature="flat",
-                has_river_variant=True,
+                river_forms=(RiverForm.STRAIGHT, RiverForm.CORNER),
                 palette=TilePalette(
                     base=(106, 168, 79),
                     shade=(92, 150, 70),
@@ -161,7 +348,7 @@ class TerrainTileGenerator:
             TileSpec(
                 name="forest",
                 feature="forest",
-                has_river_variant=True,
+                river_forms=(RiverForm.STRAIGHT, RiverForm.CORNER),
                 palette=TilePalette(
                     base=(88, 140, 68),
                     shade=(70, 114, 55),
@@ -172,7 +359,7 @@ class TerrainTileGenerator:
             TileSpec(
                 name="jungle",
                 feature="jungle",
-                has_river_variant=True,
+                river_forms=(RiverForm.STRAIGHT, RiverForm.CORNER),
                 palette=TilePalette(
                     base=(63, 122, 58),
                     shade=(44, 94, 42),
@@ -183,6 +370,7 @@ class TerrainTileGenerator:
             TileSpec(
                 name="hills",
                 feature="hills",
+                river_forms=(RiverForm.SOURCE,),
                 palette=TilePalette(
                     base=(126, 160, 84),
                     shade=(86, 116, 55),
@@ -211,8 +399,19 @@ class TerrainTileGenerator:
                 ),
             ),
             TileSpec(
+                name="desert",
+                feature="dunes",
+                palette=TilePalette(
+                    base=(226, 199, 129),
+                    shade=(196, 165, 99),
+                    highlight=(243, 224, 166),
+                    detail=(210, 179, 111),
+                ),
+            ),
+            TileSpec(
                 name="coast",
                 feature="shore",
+                river_forms=(RiverForm.MOUTH,),
                 palette=TilePalette(
                     base=(217, 201, 143),
                     shade=(192, 173, 116),
@@ -252,28 +451,29 @@ class TerrainTileGenerator:
             ),
         ]
 
-    def _render_and_save(self, spec: TileSpec, with_river: bool) -> Path:
+    def _render_and_save(self, spec: TileSpec, river_form: RiverForm) -> Path:
         """
         Render a single tile and write it to disk as a PNG
 
         Args:
             spec (TileSpec): The terrain tile to render
-            with_river (bool): Whether a river channel is drawn across the tile
+            river_form (RiverForm): The shape of river carried across the tile
 
         Returns:
             Path: The path of the PNG written
         """
         # Seed the randomness from the file name so the output is reproducible
-        file_stem = f"{spec.name}_river" if with_river else spec.name
+        file_stem = f"{spec.name}{RIVER_FILE_SUFFIXES[river_form]}"
         rng = random.Random(file_stem)
 
         surface = pygame.Surface((TILE_PIXELS, TILE_PIXELS))
+        river = self._build_river_channel(river_form)
 
         # Lay down the textured ground, the terrain feature, then any river on top
         self._draw_base_texture(surface, spec.palette, rng)
-        self._feature_renderers[spec.feature](surface, spec.palette, rng, with_river)
-        if with_river:
-            self._draw_river(surface)
+        self._feature_renderers[spec.feature](surface, spec.palette, rng, river)
+        if river and river_form not in self.FEATURE_DRAWN_RIVER_FORMS:
+            self._draw_river(surface, river)
 
         # Upscale with nearest-neighbour sampling to preserve the pixel-art look
         scaled_surface = pygame.transform.scale(
@@ -345,62 +545,214 @@ class TerrainTileGenerator:
             int(colour_from[2] + (colour_to[2] - colour_from[2]) * clamped_ratio),
         )
 
-    def _river_centre(self, y: int) -> float:
+    @staticmethod
+    def _meander_offset(position: float, amplitude: float) -> float:
         """
-        Give the horizontal centre of the river channel at a given row
+        Give the sideways offset of a river that snakes once and straightens at both ends
 
         Args:
-            y (int): The row of the tile
+            position (float): How far along the river the offset is wanted, from zero to one
+            amplitude (float): The widest the offset is allowed to grow
 
         Returns:
-            float: The horizontal centre of the river channel
+            float: The sideways offset of the centreline
         """
-        return TILE_PIXELS / 2 + RIVER_MEANDER * math.sin(y / TILE_PIXELS * 2 * math.pi)
+        # Fade a full wave in and out with a half wave, which zeroes both the offset and its
+        # gradient at either end so the river leaves each tile edge at a right angle
+        return (
+            amplitude * math.sin(2 * math.pi * position) * math.sin(math.pi * position)
+        )
 
-    def _is_clear_of_river(
-        self, x: int, y: int, with_river: bool, margin: int = 3
-    ) -> bool:
+    @staticmethod
+    def _taper_offset(position: float, amplitude: float) -> float:
         """
-        Determine whether a feature may be placed without overlapping the river
+        Give the sideways offset of a river that bows once to a single side
 
         Args:
-            x (int): The horizontal position of the feature
-            y (int): The vertical position of the feature
-            with_river (bool): Whether the tile carries a river
-            margin (int): The extra clearance required either side of the channel
+            position (float): How far along the river the offset is wanted, from zero to one
+            amplitude (float): The widest the offset is allowed to grow
 
         Returns:
-            bool: True when the position is far enough from the river channel
+            float: The sideways offset of the centreline
         """
-        if not with_river:
-            return True
+        # Square the half wave so the offset and its gradient both vanish at either end
+        return amplitude * math.sin(math.pi * position) ** 2
 
-        return abs(x - self._river_centre(y)) > RIVER_HALF_WIDTH + margin
-
-    def _draw_river(self, surface: pygame.Surface) -> None:
+    def _build_straight_river_path(self) -> list[RiverSample]:
         """
-        Draw a meandering river channel from the top to the bottom of the tile
+        Trace a river running from the top edge of the tile to the bottom edge
+
+        Returns:
+            list[RiverSample]: The centreline of the channel
+        """
+        samples: list[RiverSample] = []
+
+        # Snake down the tile, meeting both edges square on at the crossing column
+        for step in range(RIVER_PATH_SAMPLES + 1):
+            position = step / RIVER_PATH_SAMPLES
+            samples.append(
+                RiverSample(
+                    x=RIVER_CROSSING + self._meander_offset(position, RIVER_MEANDER),
+                    y=position * (TILE_PIXELS - 1),
+                    half_width=RIVER_HALF_WIDTH,
+                )
+            )
+
+        return samples
+
+    def _build_corner_river_path(self) -> list[RiverSample]:
+        """
+        Trace a river turning from the top edge of the tile to the right edge
+
+        Returns:
+            list[RiverSample]: The centreline of the channel
+        """
+        # Bend a quadratic curve between the two crossings, placing the control point where the
+        # edge normals cross so the river leaves both edges at a right angle
+        start = (float(RIVER_CROSSING), 0.0)
+        control = (float(RIVER_CROSSING), float(RIVER_CROSSING))
+        end = (float(TILE_PIXELS - 1), float(RIVER_CROSSING))
+
+        samples: list[RiverSample] = []
+        for step in range(RIVER_PATH_SAMPLES + 1):
+            position = step / RIVER_PATH_SAMPLES
+            inverse = 1 - position
+            samples.append(
+                RiverSample(
+                    x=inverse**2 * start[0]
+                    + 2 * inverse * position * control[0]
+                    + position**2 * end[0],
+                    y=inverse**2 * start[1]
+                    + 2 * inverse * position * control[1]
+                    + position**2 * end[1],
+                    half_width=RIVER_HALF_WIDTH,
+                )
+            )
+
+        return samples
+
+    def _build_source_river_path(self) -> list[RiverSample]:
+        """
+        Trace a river welling up in the middle of the tile and running to the bottom edge
+
+        Returns:
+            list[RiverSample]: The centreline of the channel
+        """
+        # Open the river with the pool it springs from
+        samples: list[RiverSample] = [
+            RiverSample(
+                x=float(RIVER_CROSSING),
+                y=float(RIVER_SOURCE_ROW),
+                half_width=RIVER_SOURCE_POOL_HALF_WIDTH,
+            )
+        ]
+
+        # Run the stream down to the bottom edge, widening to the standard channel as it goes
+        run = (TILE_PIXELS - 1) - RIVER_SOURCE_ROW
+        for step in range(RIVER_PATH_SAMPLES + 1):
+            position = step / RIVER_PATH_SAMPLES
+            samples.append(
+                RiverSample(
+                    x=RIVER_CROSSING
+                    + self._taper_offset(position, RIVER_SOURCE_MEANDER),
+                    y=RIVER_SOURCE_ROW + position * run,
+                    half_width=RIVER_SOURCE_HALF_WIDTH
+                    + position * (RIVER_HALF_WIDTH - RIVER_SOURCE_HALF_WIDTH),
+                )
+            )
+
+        return samples
+
+    def _build_mouth_river_path(self) -> list[RiverSample]:
+        """
+        Trace a river running from the top edge of the tile out into the sea
+
+        Returns:
+            list[RiverSample]: The centreline of the channel
+        """
+        samples: list[RiverSample] = []
+
+        # Carry the channel past the shoreline so it merges with the open water beyond it
+        run = SHORE_LINE + RIVER_MOUTH_OVERRUN
+        for step in range(RIVER_PATH_SAMPLES + 1):
+            position = step / RIVER_PATH_SAMPLES
+            samples.append(
+                RiverSample(
+                    x=RIVER_CROSSING
+                    + self._taper_offset(position, RIVER_MOUTH_MEANDER),
+                    y=position * run,
+                    half_width=RIVER_HALF_WIDTH
+                    + position * (RIVER_MOUTH_HALF_WIDTH - RIVER_HALF_WIDTH),
+                )
+            )
+
+        return samples
+
+    def _build_river_channel(self, river_form: RiverForm) -> RiverChannel:
+        """
+        Rasterise the river of a given form into the pixels it covers
+
+        Args:
+            river_form (RiverForm): The shape of river to build
+
+        Returns:
+            RiverChannel: The pixels the river covers
+        """
+        if river_form == RiverForm.NONE:
+            return RiverChannel(pixels=set())
+
+        samples = self._river_path_builders[river_form]()
+
+        # Sweep a disc of the local half-width along the centreline to fill the channel
+        pixels: set[tuple[int, int]] = set()
+        for sample in samples:
+            centre_x = int(round(sample.x))
+            centre_y = int(round(sample.y))
+            reach = int(math.ceil(sample.half_width))
+            for offset_y in range(-reach, reach + 1):
+                for offset_x in range(-reach, reach + 1):
+                    if math.hypot(offset_x, offset_y) > sample.half_width:
+                        continue
+                    x = centre_x + offset_x
+                    y = centre_y + offset_y
+                    if 0 <= x < TILE_PIXELS and 0 <= y < TILE_PIXELS:
+                        pixels.add((x, y))
+
+        # Remember where a source wells up so the spring can be picked out
+        source_point = (
+            (RIVER_CROSSING, RIVER_SOURCE_ROW)
+            if river_form == RiverForm.SOURCE
+            else None
+        )
+
+        return RiverChannel(pixels=pixels, source_point=source_point)
+
+    def _draw_river(self, surface: pygame.Surface, river: RiverChannel) -> None:
+        """
+        Draw a river channel over the terrain already laid down
 
         Args:
             surface (pygame.Surface): The tile being drawn
+            river (RiverChannel): The pixels the river covers
         """
-        # Colour each row of the channel, using a lighter core and darker banks
-        for y in range(TILE_PIXELS):
-            centre = self._river_centre(y)
-            for offset in range(-RIVER_HALF_WIDTH, RIVER_HALF_WIDTH + 1):
-                x = int(round(centre)) + offset
-                if 0 <= x < TILE_PIXELS:
-                    is_core = abs(offset) < RIVER_HALF_WIDTH
-                    surface.set_at(
-                        (x, y), self.RIVER_CORE if is_core else self.RIVER_EDGE
-                    )
+        # Darken the pixels that sit against the land so the channel reads as sunk into it
+        for x, y in sorted(river.pixels):
+            is_bank = river.is_bank(x, y)
+            surface.set_at((x, y), self.RIVER_EDGE if is_bank else self.RIVER_CORE)
+
+        # Pick the spring out with a dab of white water where the river wells up
+        if river.source_point is not None:
+            source_x, source_y = river.source_point
+            pygame.draw.rect(
+                surface, self.FOAM, pygame.Rect(source_x - 1, source_y, 2, 2)
+            )
 
     def _draw_flat(
         self,
         surface: pygame.Surface,
         palette: TilePalette,
         rng: random.Random,
-        with_river: bool,
+        river: RiverChannel,
         tuft_count: int = 26,
     ) -> None:
         """
@@ -410,26 +762,67 @@ class TerrainTileGenerator:
             surface (pygame.Surface): The tile being drawn
             palette (TilePalette): The colours of the tile
             rng (random.Random): The seeded random source for the tile
-            with_river (bool): Whether the tile carries a river
+            river (RiverChannel): The pixels any river covers
             tuft_count (int): The number of tufts to attempt to place
         """
         # Plant a tuft as a short vertical stroke with two splayed blades
         for _ in range(tuft_count):
             x = rng.randrange(2, TILE_PIXELS - 2)
             y = rng.randrange(3, TILE_PIXELS - 2)
-            if not self._is_clear_of_river(x, y, with_river, margin=1):
+            if not river.is_clear(x, y, margin=1):
                 continue
             surface.set_at((x, y), palette.detail)
             surface.set_at((x, y - 1), palette.detail)
             surface.set_at((x - 1, y), palette.detail)
             surface.set_at((x + 1, y), palette.detail)
 
+    def _draw_dunes(
+        self,
+        surface: pygame.Surface,
+        palette: TilePalette,
+        rng: random.Random,
+        river: RiverChannel,
+    ) -> None:
+        """
+        Draw rows of low dune ridges to suggest wind-blown sand
+
+        Args:
+            surface (pygame.Surface): The tile being drawn
+            palette (TilePalette): The colours of the tile
+            rng (random.Random): The seeded random source for the tile
+            river (RiverChannel): The pixels any river covers
+        """
+        # Shade the lee of each crest, fading back into the open sand below it
+        lee_colours = (
+            palette.highlight,
+            palette.shade,
+            self._blend(palette.shade, palette.base, 0.5),
+        )
+
+        # Roll a ridge across the tile at each height, offsetting them so they do not read as
+        # stripes and completing a full wave so ridges join up on tiles laid side by side
+        for ridge_index, crest_y in enumerate(range(4, TILE_PIXELS, 8)):
+            phase = ridge_index * math.pi / 2
+            for x in range(TILE_PIXELS):
+                wobble = 2 * math.sin(x / (TILE_PIXELS - 1) * 2 * math.pi + phase)
+                for depth, colour in enumerate(lee_colours):
+                    y = crest_y + int(round(wobble)) + depth
+                    if 0 <= y < TILE_PIXELS:
+                        surface.set_at((x, y), colour)
+
+        # Grain the open sand between the ridges
+        for _ in range(50):
+            x = rng.randrange(TILE_PIXELS)
+            y = rng.randrange(TILE_PIXELS)
+            if river.is_clear(x, y, margin=1):
+                surface.set_at((x, y), palette.detail)
+
     def _draw_speckle(
         self,
         surface: pygame.Surface,
         palette: TilePalette,
         rng: random.Random,
-        with_river: bool,
+        river: RiverChannel,
     ) -> None:
         """
         Scatter small patches over the tile to suggest frost or sparse ground cover
@@ -438,13 +831,13 @@ class TerrainTileGenerator:
             surface (pygame.Surface): The tile being drawn
             palette (TilePalette): The colours of the tile
             rng (random.Random): The seeded random source for the tile
-            with_river (bool): Whether the tile carries a river
+            river (RiverChannel): The pixels any river covers
         """
         # Dab small two-by-two patches of the accent colour across the tile
         for _ in range(22):
             x = rng.randrange(1, TILE_PIXELS - 2)
             y = rng.randrange(1, TILE_PIXELS - 2)
-            if not self._is_clear_of_river(x, y, with_river, margin=1):
+            if not river.is_clear(x, y, margin=1):
                 continue
             pygame.draw.rect(surface, palette.detail, pygame.Rect(x, y, 2, 2))
 
@@ -453,7 +846,7 @@ class TerrainTileGenerator:
         surface: pygame.Surface,
         palette: TilePalette,
         rng: random.Random,
-        with_river: bool,
+        river: RiverChannel,
     ) -> None:
         """
         Draw a range of snow-capped peaks filling the tile
@@ -462,7 +855,7 @@ class TerrainTileGenerator:
             surface (pygame.Surface): The tile being drawn
             palette (TilePalette): The colours of the tile
             rng (random.Random): The seeded random source for the tile
-            with_river (bool): Whether the tile carries a river
+            river (RiverChannel): The pixels any river covers
         """
         outline_colour = self._darken(palette.shade, 0.6)
         base_y = TILE_PIXELS - 1
@@ -522,7 +915,7 @@ class TerrainTileGenerator:
         surface: pygame.Surface,
         palette: TilePalette,
         rng: random.Random,
-        with_river: bool,
+        river: RiverChannel,
     ) -> None:
         """
         Draw rounded mounds with shaded flanks to suggest rolling hills
@@ -531,7 +924,7 @@ class TerrainTileGenerator:
             surface (pygame.Surface): The tile being drawn
             palette (TilePalette): The colours of the tile
             rng (random.Random): The seeded random source for the tile
-            with_river (bool): Whether the tile carries a river
+            river (RiverChannel): The pixels any river covers
         """
         # Raise broad, flattened mounds back to front so the nearer ones overlap those behind
         mounds = [(19, 9, 12, 7), (8, 19, 13, 8), (25, 24, 14, 9), (16, 31, 17, 10)]
@@ -568,14 +961,14 @@ class TerrainTileGenerator:
             )
 
         # Dust the slopes with a light scatter of vegetation
-        self._draw_flat(surface, palette, rng, with_river, tuft_count=10)
+        self._draw_flat(surface, palette, rng, river, tuft_count=10)
 
     def _draw_forest(
         self,
         surface: pygame.Surface,
         palette: TilePalette,
         rng: random.Random,
-        with_river: bool,
+        river: RiverChannel,
     ) -> None:
         """
         Draw a scatter of conifers across the tile
@@ -584,7 +977,7 @@ class TerrainTileGenerator:
             surface (pygame.Surface): The tile being drawn
             palette (TilePalette): The colours of the tile
             rng (random.Random): The seeded random source for the tile
-            with_river (bool): Whether the tile carries a river
+            river (RiverChannel): The pixels any river covers
         """
         trunk_colour: RGB = (74, 53, 36)
 
@@ -600,7 +993,7 @@ class TerrainTileGenerator:
         for base_x, base_y in positions:
             jittered_x = base_x + rng.randint(-1, 1)
             jittered_y = base_y + rng.randint(-1, 1)
-            if not self._is_clear_of_river(jittered_x, jittered_y, with_river):
+            if not river.is_clear(jittered_x, jittered_y):
                 continue
 
             # Stand the trunk on the ground point, then stack two canopy tiers above it
@@ -631,7 +1024,7 @@ class TerrainTileGenerator:
         surface: pygame.Surface,
         palette: TilePalette,
         rng: random.Random,
-        with_river: bool,
+        river: RiverChannel,
     ) -> None:
         """
         Draw a dense canopy of overlapping broadleaf crowns
@@ -640,7 +1033,7 @@ class TerrainTileGenerator:
             surface (pygame.Surface): The tile being drawn
             palette (TilePalette): The colours of the tile
             rng (random.Random): The seeded random source for the tile
-            with_river (bool): Whether the tile carries a river
+            river (RiverChannel): The pixels any river covers
         """
         # Pack rounded crowns together so almost no ground shows through
         positions = [
@@ -649,9 +1042,7 @@ class TerrainTileGenerator:
         for base_x, base_y in positions:
             jittered_x = base_x + rng.randint(-1, 1)
             jittered_y = base_y + rng.randint(-1, 1)
-            if not self._is_clear_of_river(
-                jittered_x, jittered_y, with_river, margin=2
-            ):
+            if not river.is_clear(jittered_x, jittered_y, margin=2):
                 continue
 
             radius = rng.randint(3, 4)
@@ -717,7 +1108,7 @@ class TerrainTileGenerator:
         surface: pygame.Surface,
         palette: TilePalette,
         rng: random.Random,
-        with_river: bool,
+        river: RiverChannel,
     ) -> None:
         """
         Draw a sandy shoreline washed by shallow water along the bottom edge
@@ -726,16 +1117,22 @@ class TerrainTileGenerator:
             surface (pygame.Surface): The tile being drawn
             palette (TilePalette): The colours of the tile
             rng (random.Random): The seeded random source for the tile
-            with_river (bool): Whether the tile carries a river
+            river (RiverChannel): The pixels any river covers
         """
-        self._flood_shore(surface, palette, rng, self._is_straight_shore_water)
+        # Treat the river as part of the sea so it carves the sand open on its way down and the
+        # shoreline is traced around its banks in one pass
+        self._flood_shore(surface, palette, rng, self._build_shore_water_mask(river))
+
+        # Freshen the water upstream of the waterline so the river reads as a river
+        if river:
+            self._draw_river_mouth(surface, palette, river)
 
     def _draw_shore_corner(
         self,
         surface: pygame.Surface,
         palette: TilePalette,
         rng: random.Random,
-        with_river: bool,
+        river: RiverChannel,
     ) -> None:
         """
         Draw a sandy shoreline wrapping around the bottom-right corner of the tile
@@ -744,9 +1141,61 @@ class TerrainTileGenerator:
             surface (pygame.Surface): The tile being drawn
             palette (TilePalette): The colours of the tile
             rng (random.Random): The seeded random source for the tile
-            with_river (bool): Whether the tile carries a river
+            river (RiverChannel): The pixels any river covers
         """
         self._flood_shore(surface, palette, rng, self._is_corner_shore_water)
+
+    def _build_shore_water_mask(
+        self, river: RiverChannel
+    ) -> Callable[[int, int], bool]:
+        """
+        Build the mask reporting which pixels of a coast tile hold water
+
+        Args:
+            river (RiverChannel): The pixels any river covers
+
+        Returns:
+            Callable[[int, int], bool]: Reports whether a pixel is water
+        """
+        if not river:
+            return self._is_straight_shore_water
+
+        def is_water(x: int, y: int) -> bool:
+            """
+            Determine whether a pixel holds either sea or river water
+
+            Args:
+                x (int): The horizontal position in the tile
+                y (int): The vertical position in the tile
+
+            Returns:
+                bool: True when the pixel is water
+            """
+            return self._is_straight_shore_water(x, y) or river.contains(x, y)
+
+        return is_water
+
+    def _draw_river_mouth(
+        self, surface: pygame.Surface, palette: TilePalette, river: RiverChannel
+    ) -> None:
+        """
+        Tint the landward run of a river mouth so fresh water fades into the sea
+
+        Args:
+            surface (pygame.Surface): The tile being drawn
+            palette (TilePalette): The colours of the tile
+            river (RiverChannel): The pixels the river covers
+        """
+        for x, y in sorted(river.pixels):
+            # Leave the open sea, and the banks already traced against the sand, untouched
+            if self._is_straight_shore_water(x, y) or river.is_bank(x, y):
+                continue
+
+            # Wash the fresh water towards the colour of the sea as it nears the waterline
+            fade_ratio = min(y / SHORE_LINE, 1.0) * RIVER_MOUTH_FADE
+            surface.set_at(
+                (x, y), self._blend(self.RIVER_CORE, palette.detail, fade_ratio)
+            )
 
     def _flood_shore(
         self,
@@ -790,7 +1239,7 @@ class TerrainTileGenerator:
             x = rng.randrange(1, TILE_PIXELS - 2)
             y = rng.randrange(1, TILE_PIXELS - 1)
             if water_mask(x, y) and water_mask(x, y - 3):
-                pygame.draw.line(surface, (225, 240, 248), (x, y), (x + 1, y))
+                pygame.draw.line(surface, self.FOAM, (x, y), (x + 1, y))
 
         # Litter the dry sand with a scatter of pebbles
         for _ in range(20):
@@ -804,7 +1253,7 @@ class TerrainTileGenerator:
         surface: pygame.Surface,
         palette: TilePalette,
         rng: random.Random,
-        with_river: bool,
+        river: RiverChannel,
     ) -> None:
         """
         Draw rows of short wave crests over open water
@@ -813,7 +1262,7 @@ class TerrainTileGenerator:
             surface (pygame.Surface): The tile being drawn
             palette (TilePalette): The colours of the tile
             rng (random.Random): The seeded random source for the tile
-            with_river (bool): Whether the tile carries a river
+            river (RiverChannel): The pixels any river covers
         """
         # Stagger short crests row by row so the water reads as moving
         for row_index, y in enumerate(range(3, TILE_PIXELS - 2, 6)):

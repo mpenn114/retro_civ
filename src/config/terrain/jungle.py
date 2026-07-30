@@ -23,4 +23,8 @@ JungleRiverTerrain = BaseTerrain(
     blocks=True,
 )
 
-__all__ = [JungleTerrain, JungleRiverTerrain]
+JungleRiverCornerTerrain = JungleRiverTerrain.with_image(
+    TERRAIN_IMAGES.jungle_river_corner
+)
+
+__all__ = [JungleTerrain, JungleRiverTerrain, JungleRiverCornerTerrain]
