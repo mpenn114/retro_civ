@@ -11,5 +11,6 @@ dependencies = [
     "pygame>=2.6.1",
     "pytest>=9.1.1",
     "pytest-cov>=7.1.0",
+    "shapely>=2.1.2",
     "ty>=0.0.64",
 ]

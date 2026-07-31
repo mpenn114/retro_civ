@@ -14,7 +14,7 @@ class EllipseParams(BaseModel):
     radius: float = Field(ge=0)
     eccentricity: float = Field(ge = 0, le = 1)
 
-class Ellipse:
+class PerturbedEllipse:
 
     def __init__(self, params: EllipseParams):
         """
@@ -25,11 +25,10 @@ class Ellipse:
         """
         self.params = params
 
-    def get_perturbation(
-            self,
+    def perturb(
+        self,
         perturbation_variance:float,
         n_points: int = 1000
-
     ) -> np.ndarray:
         """
         Generate evenly spaced points around an ellipse perimeter that is perturbed by a Gaussian kernel
@@ -53,14 +52,11 @@ class Ellipse:
 
         # Generate the noise
         raw_noise = np.random.randn(size=n_points)*np.sqrt(perturbation_variance)/n_points
-        centred_noise = raw_noise - raw_noise.mean()
-
+        centred_multiplicative_noise = np.exp(raw_noise - raw_noise.mean())
 
         # Generate the points
-        x = a * np.cos(theta)
-        y = b * np.sin(theta)
+        ellipse_points = np.zeros((n_points, 2))
+        ellipse_points[:,0] = cx + a * centred_multiplicative_noise * np.cos(theta)
+        ellipse_points[:,1] = cy + b * centred_multiplicative_noise * np.sin(theta)
 
-        # Define the Gaussian noise 
-        kernal_noise =
-
-        return points
+        return ellipse_points
