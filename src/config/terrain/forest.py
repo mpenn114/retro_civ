@@ -1,4 +1,4 @@
-from .base import BaseTerrain
+from .base import BaseTerrain, TerrainGeography
 from src.config.base_yield.base import AdditiveYield
 from src.art import TERRAIN_IMAGES
 
@@ -11,6 +11,7 @@ ForestTerrain = BaseTerrain(
     base_yield=AdditiveYield(food=1, production=1),
     base_image=TERRAIN_IMAGES.forest,
     blocks=True,
+    geography=TerrainGeography(temperature=10, rainfall=0.6)
 )
 
 ForestRiverTerrain = BaseTerrain(
@@ -21,6 +22,7 @@ ForestRiverTerrain = BaseTerrain(
     base_yield=AdditiveYield(food=2, production=2, gold=1),
     base_image=TERRAIN_IMAGES.forest_river,
     blocks=True,
+    geography=None
 )
 
 ForestRiverCornerTerrain = ForestRiverTerrain.with_image(

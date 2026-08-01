@@ -1,4 +1,4 @@
-from .base import BaseTerrain
+from .base import BaseTerrain, TerrainGeography
 from src.config.base_yield.base import AdditiveYield
 from src.art import TERRAIN_IMAGES
 
@@ -12,6 +12,7 @@ DesertTerrain = BaseTerrain(
     is_land=True,
     base_yield=AdditiveYield(),
     base_image=TERRAIN_IMAGES.desert,
+    geography=TerrainGeography(temperature=25, rainfall=0.0)
 )
 
 __all__ = [DesertTerrain]

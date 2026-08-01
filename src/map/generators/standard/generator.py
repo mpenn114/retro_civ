@@ -1,45 +1,10 @@
 from src.map.base.generator import BaseMapGenerator
-from src.map.base.map_size import BaseMapSize
 from src.map.base.map import BaseMap
 from src.map.utils.ellipse import PerturbedEllipse, EllipseParams
-from pydantic import BaseModel
 import numpy as np
 from shapely import Polygon
 from src.map.utils.land_classifier import LandClassifier
-from shapely.strtree import STRtree
-
-class StandardMapParameters(BaseModel):
-    """
-    Define the parameters for the standard map
-
-    Note: all distance / length parameters are in units of tiles
-    """
-    # Define the map size
-    map_size: BaseMapSize = BaseMapSize(size_x=500, size_y=300)
-
-    # Define the number of islands to seed (note: islands may merge so there could
-    # be fewer than {island_seeds} islands)
-    island_seeds: int = 10
-
-    # Define the mean and variance parameters for the radius and eccentricity of the islands
-    # Note: We assume that log(radius) = N(log(mu_r), sigma_r^2) and 
-    # log(ecc/(1-ecc)) = N(log(mu_e/(1-mu_e)), sigma_e^2)
-    island_radius_mean:float = 50.0
-    log_island_radius_variance:float = 2.0
-    min_island_radius: float = 1.0
-    max_island_radius: float = 100.0
-
-    island_ecc_mean:float = 0.3
-    logit_island_ecc_variance:float = 1.0
-
-    # Define the island perturbation noise
-    island_radius_perturbation_noise_mean:float = 25.0
-    island_radius_perturbation_noise_variance:float = 1.0
-
-    # Define the random seed
-    seed = 42
-
-
+from .params import StandardMapParameters
 
 
 class StandardMapGenerator(BaseMapGenerator):
@@ -66,6 +31,7 @@ class StandardMapGenerator(BaseMapGenerator):
         5) Choose an arbitrary point in each island and assign its terrain based on this model
         6) Assign remaining terrains based on this model, with a penalty assigned for terrain transitions
         7) Add rivers
+        8) Tidy with appropriate corner tiles to ensure congruity
 
         Args:
             map_size (BaseMapSize): The size of the map
@@ -78,6 +44,8 @@ class StandardMapGenerator(BaseMapGenerator):
 
         # Classify the land
         classified_land = LandClassifier().classify(islands)
+
+        # Add hills and mountains
 
 
     

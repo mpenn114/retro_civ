@@ -10,6 +10,7 @@ CoastTerrain = BaseTerrain(
     is_land=True,
     base_yield=AdditiveYield(food=2, production=1),
     base_image=TERRAIN_IMAGES.coast,
+    geography=None
 )
 
 CoastCornerTerrain = CoastTerrain.with_image(TERRAIN_IMAGES.coast_corner)

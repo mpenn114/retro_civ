@@ -2,6 +2,15 @@ from pydantic import BaseModel, ConfigDict, Field
 from src.config.base_yield.base import AdditiveYield
 import pygame
 
+class TerrainGeography(BaseModel):
+    """
+    Define the geographical parameters of different terrain types
+    """
+    # Give the temperature in degrees C
+    temperature: int
+
+    # Give the rainfall in a slightly vibes-based percentage scale
+    rainfall: float = Field(ge=0, le= 1)
 
 class BaseTerrain(BaseModel):
     """
@@ -31,6 +40,9 @@ class BaseTerrain(BaseModel):
 
     # Give the base image for this terrain
     base_image: pygame.Surface
+
+    # Give the geography of this terrain, or None if it is independent of geography
+    geography: TerrainGeography | None = None
 
     def with_image(self, base_image: pygame.Surface) -> "BaseTerrain":
         """
