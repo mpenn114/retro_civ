@@ -38,6 +38,23 @@ class StandardMapParameters(BaseModel):
     water_cooling_scale:float = 1.0
     water_cooling_max:float = 5.0
 
+    # Determine the probability of a tile being a mountain range seed
+    mountain_range_seed_prob:float = Field(ge = 0, default = 0.002)
+
+    # Determine the probability of a tile being a hill range seed
+    hill_range_seed_prob:float = Field(ge = 0, default = 0.005)
+
+    # Determine the probability of a tile being a river seed (note: rivers must be seeded on hills)
+    river_seed_prob:float = Field(ge = 0, default = 0.05)
+
+    # Determine the probability of continuing in the mountain range random walk
+    mountain_range_continue_prob: float =  Field(ge = 0, le = 1, default = 0.6)
+    hill_range_continue_prob: float =  Field(ge = 0, le = 1, default = 0.8)
+
+    # Determine the probability of an orthogonally adjacent tile to a mountain being a hill
+    hill_orthogonal_prob: float = Field(ge = 0, le = 1, default = 0.3)
+
+    
     # Define the random seed
     seed:int = 42
 

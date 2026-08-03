@@ -1,7 +1,6 @@
 from pydantic import BaseModel, model_validator
 from .rural import BaseRural
 from .city import BaseCity
-from .coordinates import BaseCoordinates
 from src.config.units import BaseUnit
 
 
@@ -23,8 +22,6 @@ class BaseTile(BaseModel):
     # Add the rural details (always relevant)
     rural_details: BaseRural
 
-    # Determine the coordinates on the map
-    coordinates: BaseCoordinates
 
     @model_validator(mode="after")
     def validate_worked_tiles(self) -> "BaseTile":
