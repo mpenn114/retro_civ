@@ -20,7 +20,6 @@ class ClassifiedTiles(BaseModel):
     model_config = ConfigDict(arbitrary_types_allowed=True)
 
 
-
 class LandClassifier:
     def __init__(self):
         """

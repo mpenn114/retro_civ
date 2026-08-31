@@ -11,7 +11,7 @@ class BaseRural(BaseModel):
     """
 
     # Keep the model mutable but hashable, so tiles can be used as dict keys
-    model_config = ConfigDict(eq=False)
+    model_config = ConfigDict(eq=False)  # ty: ignore
 
     coordinates: BaseCoordinates
     terrain: BaseTerrain
@@ -31,13 +31,15 @@ class BaseRural(BaseModel):
         )
 
     def __hash__(self):
-        return hash((
-            self.coordinates,
-            self.terrain,
-            self.rotation,
-            frozenset(self.improvements),
-            frozenset(self.resources),
-        ))
+        return hash(
+            (
+                self.coordinates,
+                self.terrain,
+                self.rotation,
+                frozenset(self.improvements),
+                frozenset(self.resources),
+            )
+        )
 
     def describe(self) -> str:
         """

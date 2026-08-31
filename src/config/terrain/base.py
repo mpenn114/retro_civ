@@ -50,14 +50,10 @@ class BaseTerrain(BaseModel):
     def __eq__(self, other):
         if not isinstance(other, BaseTerrain):
             return NotImplemented
-        return (
-            self.name == other.name
-        )
+        return self.name == other.name
 
     def __hash__(self):
-        return hash((
-            self.name,
-        ))
+        return hash((self.name,))
 
     def with_image(self, base_image: pygame.Surface) -> "BaseTerrain":
         """

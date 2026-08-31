@@ -50,7 +50,7 @@ class BaseTile(BaseModel):
         """
         return f"""
             Tile:
-                {self.city_details.describe() if self.is_city else "Rural"}
+                {self.city_details.describe() if self.city_details is not None else "Rural"}
                 {self.unit_details.describe() if self.unit_details is not None else "Unoccupied"}
                 {self.rural_details.describe()}
 

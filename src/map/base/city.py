@@ -54,4 +54,3 @@ class BaseCity(BaseModel):
                 Name: {self.name}
                 Population: {self.population}
         """
-

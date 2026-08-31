@@ -748,7 +748,7 @@ class StandardLandTerrainModel:
             size=interior_mask.shape,
         )
         overall_tile_temperature = (
-            baseline_temperature[np.newaxis,:] - coastal_cooling + temperature_noise
+            baseline_temperature[np.newaxis, :] - coastal_cooling + temperature_noise
         )
 
         return overall_tile_temperature
