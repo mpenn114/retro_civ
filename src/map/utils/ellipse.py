@@ -50,7 +50,7 @@ class PerturbedEllipse:
 
         # Generate the noise
         raw_noise = (
-            np.random.randn(size=n_points) * np.sqrt(perturbation_variance) / n_points
+            np.random.randn(n_points) * np.sqrt(perturbation_variance) / n_points
         )
         centred_multiplicative_noise = np.exp(raw_noise - raw_noise.mean())
 

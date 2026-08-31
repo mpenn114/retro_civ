@@ -14,10 +14,10 @@ class BaseTile(BaseModel):
     is_city: bool = False
 
     # Add the city details if relevant
-    city_details: BaseCity | None
+    city_details: BaseCity | None = None
 
     # Add the unit details if relevant
-    unit_details: BaseUnit | None
+    unit_details: BaseUnit | None = None
 
     # Add the rural details (always relevant)
     rural_details: BaseRural

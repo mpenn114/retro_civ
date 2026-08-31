@@ -456,13 +456,17 @@ class StandardLandTerrainModel:
                 else None
             )
 
+            # Raise an error if both inwards and outwards directions are none
+            if direction_out is None and direction_in is None:
+                raise ValueError("One of the in and out directions must be defined")
+
             # Place a hill source facing the way the river leaves
             if direction_in is None:
                 river_tiles.add(
                     self._create_tile(
                         HillsRiverSourceTerrain,
                         coordinates,
-                        DIRECTION_ROTATIONS[direction_out],
+                        DIRECTION_ROTATIONS[direction_out],  # ty: ignore
                     )
                 )
                 continue
@@ -702,6 +706,10 @@ class StandardLandTerrainModel:
         Returns:
             np.ndarray: The unscaled probability of the terrain in each tile
         """
+        if terrain.geography is None:
+            raise ValueError(
+                f"This method can only be called on cases where terrain has geography: got {terrain}."
+            )
         return 1 / np.clip(
             np.square(temperature - terrain.geography.temperature), 0.25, np.inf
         )
@@ -796,7 +804,7 @@ class StandardLandTerrainModel:
             BaseRural: The constructed tile
         """
         return BaseRural(
-            terrain,
+            terrain=terrain,
             coordinates=BaseCoordinates(x=coordinates[0], y=coordinates[1]),
             rotation=rotation,
         )

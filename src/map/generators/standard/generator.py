@@ -1,10 +1,12 @@
 from src.map.base.generator import BaseMapGenerator
 from src.map.base.map import BaseMap
+from src.map.base.tile import BaseTile
 from src.map.utils.ellipse import PerturbedEllipse, EllipseParams
 import numpy as np
 from shapely import Polygon
 from src.map.utils.land_classifier import LandClassifier
 from .params import StandardMapParameters
+from src.map.generators.standard.land_terrain_model import StandardLandTerrainModel
 
 
 class StandardMapGenerator(BaseMapGenerator):
@@ -41,10 +43,18 @@ class StandardMapGenerator(BaseMapGenerator):
         # Generate the islands
         islands = self._generate_islands()
 
-        # Classify the land
-        classified_land = LandClassifier().classify(islands)
+        # Classify the land into islands and ocean
+        classified_land = LandClassifier().classify(islands, self.params.map_size)
 
-        # Add hills and mountains
+        # Fill in terrain
+        generated_land = StandardLandTerrainModel().create_tiles(
+            classified_land, self.params
+        )
+
+        # Create the map
+        return BaseMap(
+            tiles={BaseTile(rural_details=rural) for rural in generated_land}
+        )
 
     def _generate_islands(self) -> list[Polygon]:
         """
@@ -73,7 +83,7 @@ class StandardMapGenerator(BaseMapGenerator):
             logit_island_eccentricity = self.logit(
                 self.params.island_ecc_mean
             ) + np.random.randn() * np.sqrt(self.params.logit_island_ecc_variance)
-            island_eccentricity = self.logistic(logit_island_eccentricity)
+            island_eccentricity = float(self.logistic(logit_island_eccentricity))
 
             # Sample the perturbation parameters
             island_perturbation_strength = np.clip(
@@ -102,11 +112,11 @@ class StandardMapGenerator(BaseMapGenerator):
         return islands
 
     @staticmethod
-    def logit(x: np.ndarray) -> np.ndarray:
+    def logit(x: np.ndarray | float) -> np.ndarray | float:
         """Get the logit of an array"""
         return np.log(x / (1 - x))
 
     @staticmethod
-    def logistic(x: np.ndarray) -> np.ndarray:
+    def logistic(x: np.ndarray | float) -> np.ndarray | float:
         """Get the logistic of an array"""
         return 1 / (1 + np.exp(-x))
