@@ -9,9 +9,9 @@ class BaseRural(BaseModel):
     """
     Define a base class to contain all information about a rural tile
     """
-    coordinates:BaseCoordinates
+
+    coordinates: BaseCoordinates
     terrain: BaseTerrain
-    rotation: float = Field(ge=0, le = 360, default=0.0)
+    rotation: float = Field(ge=0, le=360, default=0.0)
     improvements: set[BaseImprovement] = set()
     resources: set[BaseResource] = set()
-    

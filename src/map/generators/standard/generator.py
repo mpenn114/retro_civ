@@ -8,7 +8,6 @@ from .params import StandardMapParameters
 
 
 class StandardMapGenerator(BaseMapGenerator):
-
     def __init__(self, map_params: StandardMapParameters):
         """
         Generate a new map of a certain type
@@ -26,7 +25,7 @@ class StandardMapGenerator(BaseMapGenerator):
 
         1) Seed islands
         2) Select each island shape as a Gaussian-perturbed ellipse
-        3) Add shallow and deep water to the non-island spaces accordingly 
+        3) Add shallow and deep water to the non-island spaces accordingly
         4) Use a baseline model for terrain type, based on features of the tile (distance to sea, latitude etc.)
         5) Choose an arbitrary point in each island and assign its terrain based on this model
         6) Assign remaining terrains based on this model, with a penalty assigned for terrain transitions
@@ -35,7 +34,7 @@ class StandardMapGenerator(BaseMapGenerator):
 
         Args:
             map_size (BaseMapSize): The size of the map
-        
+
         Returns:
             BaseMap: The map object
         """
@@ -46,10 +45,6 @@ class StandardMapGenerator(BaseMapGenerator):
         classified_land = LandClassifier().classify(islands)
 
         # Add hills and mountains
-
-
-    
-
 
     def _generate_islands(self) -> list[Polygon]:
         """
@@ -62,49 +57,56 @@ class StandardMapGenerator(BaseMapGenerator):
         # Generate islands in turn
         islands: list[Polygon] = []
         for _ in range(self.params.island_seeds):
-
             # Sample the centre of the island
             island_centre_x = np.random.choice(self.params.map_size.size_x)
             island_centre_y = np.random.choice(self.params.map_size.size_y)
 
             # Sample the radius and eccentricity of the island
-            island_radius = np.clip(self.params.island_radius_mean*np.exp(np.random.randn()*np.sqrt(self.params.log_island_radius_variance)), self.params.min_island_radius, self.params.max_island_radius)
-            logit_island_eccentricity = self.logit(self.params.island_ecc_mean) + np.random.randn()*np.sqrt(self.params.logit_island_ecc_variance)
+            island_radius = np.clip(
+                self.params.island_radius_mean
+                * np.exp(
+                    np.random.randn() * np.sqrt(self.params.log_island_radius_variance)
+                ),
+                self.params.min_island_radius,
+                self.params.max_island_radius,
+            )
+            logit_island_eccentricity = self.logit(
+                self.params.island_ecc_mean
+            ) + np.random.randn() * np.sqrt(self.params.logit_island_ecc_variance)
             island_eccentricity = self.logistic(logit_island_eccentricity)
 
             # Sample the perturbation parameters
-            island_perturbation_strength = np.clip(self.params.island_radius_perturbation_noise_mean + np.sqrt(self.params.island_radius_perturbation_noise_variance)*np.random.randn(), 0, np.inf)
+            island_perturbation_strength = np.clip(
+                self.params.island_radius_perturbation_noise_mean
+                + np.sqrt(self.params.island_radius_perturbation_noise_variance)
+                * np.random.randn(),
+                0,
+                np.inf,
+            )
 
             # Generate the ellipse parameters
-            island_parameters = EllipseParams(centre=(island_centre_x, island_centre_y), radius = island_radius, eccentricity=island_eccentricity)
+            island_parameters = EllipseParams(
+                centre=(island_centre_x, island_centre_y),
+                radius=island_radius,
+                eccentricity=island_eccentricity,
+            )
 
             # Generate the island ellipse
-            island = PerturbedEllipse(island_parameters).perturb(island_perturbation_strength, n_points=20)
+            island = PerturbedEllipse(island_parameters).perturb(
+                island_perturbation_strength, n_points=20
+            )
 
             # Add to the list of islands
             islands.append(Polygon(island))
 
         return islands
 
-
-
-
-
-
-            
-
-
-
     @staticmethod
-    def logit(x:np.ndarray) -> np.ndarray:
+    def logit(x: np.ndarray) -> np.ndarray:
         """Get the logit of an array"""
-        return np.log(x/(1-x))
+        return np.log(x / (1 - x))
 
     @staticmethod
-    def logistic(x:np.ndarray) -> np.ndarray:
+    def logistic(x: np.ndarray) -> np.ndarray:
         """Get the logistic of an array"""
-        return 1/(1+np.exp(-x))
-
-
-
-        
+        return 1 / (1 + np.exp(-x))

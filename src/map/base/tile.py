@@ -22,7 +22,6 @@ class BaseTile(BaseModel):
     # Add the rural details (always relevant)
     rural_details: BaseRural
 
-
     @model_validator(mode="after")
     def validate_worked_tiles(self) -> "BaseTile":
         """

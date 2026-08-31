@@ -11,7 +11,7 @@ ForestTerrain = BaseTerrain(
     base_yield=AdditiveYield(food=1, production=1),
     base_image=TERRAIN_IMAGES.forest,
     blocks=True,
-    geography=TerrainGeography(temperature=10, rainfall=0.6)
+    geography=TerrainGeography(temperature=10, rainfall=0.6),
 )
 
 ForestRiverTerrain = BaseTerrain(
@@ -22,7 +22,7 @@ ForestRiverTerrain = BaseTerrain(
     base_yield=AdditiveYield(food=2, production=2, gold=1),
     base_image=TERRAIN_IMAGES.forest_river,
     blocks=True,
-    geography=None
+    geography=None,
 )
 
 ForestRiverCornerTerrain = ForestRiverTerrain.with_image(

@@ -9,6 +9,7 @@ class ClassifiedTiles(BaseModel):
     """
     Determine the land/ coast /shallow ocean / deep ocean status of a map
     """
+
     coordinates: np.ndarray
     is_interior: np.ndarray
     is_coastal: np.ndarray
@@ -17,13 +18,14 @@ class ClassifiedTiles(BaseModel):
 
 
 class LandClassifier:
-
     def __init__(self):
         """
         Determine the status of tiles based on island polygons
         """
 
-    def classify(self, islands:list[Polygon], map_size: BaseMapSize) -> ClassifiedTiles:
+    def classify(
+        self, islands: list[Polygon], map_size: BaseMapSize
+    ) -> ClassifiedTiles:
         """
         Generate a land type classifier for the map
 
@@ -57,13 +59,13 @@ class LandClassifier:
             is_interior=is_interior,
             is_coastal=is_coastal,
             is_shallow_ocean=is_shallow,
-            is_deep_ocean=is_deep
+            is_deep_ocean=is_deep,
         )
 
-    def _determine_water_type(self, land_mask:np.ndarray, map_size:BaseMapSize):
+    def _determine_water_type(self, land_mask: np.ndarray, map_size: BaseMapSize):
         """
         Determine whether water tiles are deep or shallow water
-        
+
         Note: Deep water tiles are more than two tiles from the coast
 
         Args:
@@ -96,8 +98,6 @@ class LandClassifier:
         is_deep = water & ~within_two
 
         return is_shallow, is_deep
-
-
 
     def _expand_mask_orthogonally(
         self,
@@ -136,7 +136,9 @@ class LandClassifier:
 
         return mask | north | south | east | west
 
-    def _determine_coast(self,land_mask:np.ndarray, map_size:BaseMapSize) -> tuple[np.ndarray, np.ndarray]:
+    def _determine_coast(
+        self, land_mask: np.ndarray, map_size: BaseMapSize
+    ) -> tuple[np.ndarray, np.ndarray]:
         """
         Determine which tiles correspond to coast
 
@@ -177,7 +179,8 @@ class LandClassifier:
         is_coastal = land_mask & ~is_interior
 
         return is_coastal, is_interior
-    def _determine_land(self, coordinates:np.ndarray, islands:list[Polygon]):
+
+    def _determine_land(self, coordinates: np.ndarray, islands: list[Polygon]):
         """
         Determine which points are land
 
@@ -203,5 +206,3 @@ class LandClassifier:
         land = land.reshape(coordinates.shape[:2])
 
         return land
-
-    

@@ -45,7 +45,6 @@ DIRECTION_ROTATIONS: dict[Direction, int] = {NORTH: 0, EAST: 90, SOUTH: 180, WES
 
 
 class StandardLandTerrainModel:
-
     def __init__(
         self,
         max_river_length: int = 50,
@@ -63,7 +62,13 @@ class StandardLandTerrainModel:
         self.max_river_length = max_river_length
         self.randomise_tile_rotation = randomise_tile_rotation
         self.flat_land_types = [
-            DesertTerrain, ForestTerrain, GrassTerrain, JungleTerrain, PlainsTerrain, SnowTerrain, TundraTerrain
+            DesertTerrain,
+            ForestTerrain,
+            GrassTerrain,
+            JungleTerrain,
+            PlainsTerrain,
+            SnowTerrain,
+            TundraTerrain,
         ]
         self.river_tile_map = {
             ForestTerrain.name: ForestRiverTerrain,
@@ -81,7 +86,9 @@ class StandardLandTerrainModel:
         self.hills = HillsTerrain
         self.mountains = MountainTerrain
 
-    def create_tiles(self, classified_tiles: ClassifiedTiles, map_params: StandardMapParameters) -> set[BaseRural]:
+    def create_tiles(
+        self, classified_tiles: ClassifiedTiles, map_params: StandardMapParameters
+    ) -> set[BaseRural]:
         """
         Assign a terrain type and rotation to every tile on the map
 
@@ -94,27 +101,41 @@ class StandardLandTerrainModel:
             set[BaseRural]: A tile for every interior, coastal and ocean coordinate on the map
         """
         # Derive a temperature for every tile
-        tile_temperatures = self._create_tile_temperature(classified_tiles.is_interior, map_params)
+        tile_temperatures = self._create_tile_temperature(
+            classified_tiles.is_interior, map_params
+        )
 
         # Assign flat terrain to the island interiors
-        terrain_map = self._assign_flat_terrain(classified_tiles.is_interior, tile_temperatures)
+        terrain_map = self._assign_flat_terrain(
+            classified_tiles.is_interior, tile_temperatures
+        )
 
         # Overwrite the interior with mountains, then hills
-        terrain_map = self._assign_mountains(classified_tiles.is_interior, map_params, terrain_map)
-        terrain_map = self._assign_hills(classified_tiles.is_interior, map_params, terrain_map)
+        terrain_map = self._assign_mountains(
+            classified_tiles.is_interior, map_params, terrain_map
+        )
+        terrain_map = self._assign_hills(
+            classified_tiles.is_interior, map_params, terrain_map
+        )
 
         # Route rivers from hill sources down to the coast
-        river_tiles, river_coordinates = self._assign_rivers(classified_tiles, map_params, terrain_map)
+        river_tiles, river_coordinates = self._assign_rivers(
+            classified_tiles, map_params, terrain_map
+        )
 
         # Combine the river tiles with the remaining land, coast and ocean tiles
         all_tiles = set(river_tiles)
         all_tiles |= self._create_land_tiles(terrain_map, river_coordinates)
-        all_tiles |= self._create_coast_tiles(classified_tiles, map_params, river_coordinates)
+        all_tiles |= self._create_coast_tiles(
+            classified_tiles, map_params, river_coordinates
+        )
         all_tiles |= self._create_ocean_tiles(classified_tiles)
 
         return all_tiles
 
-    def _assign_flat_terrain(self, interior_mask: np.ndarray, tile_temperatures: np.ndarray) -> dict[Coordinate, BaseTerrain]:
+    def _assign_flat_terrain(
+        self, interior_mask: np.ndarray, tile_temperatures: np.ndarray
+    ) -> dict[Coordinate, BaseTerrain]:
         """
         Assign a flat terrain land type to each interior tile
 
@@ -128,7 +149,8 @@ class StandardLandTerrainModel:
         """
         # Get unscaled probabilities for each flat terrain in each tile
         terrain_probabilities = {
-            terrain: self._get_terrain_tile_prob(tile_temperatures, terrain) for terrain in self.flat_land_types
+            terrain: self._get_terrain_tile_prob(tile_temperatures, terrain)
+            for terrain in self.flat_land_types
         }
 
         # Stack the probabilities into a single array with terrain on the final axis
@@ -141,7 +163,9 @@ class StandardLandTerrainModel:
         flat_probabilities = probabilities[interior_mask]
 
         # Normalise the probabilities per tile
-        flat_probabilities = flat_probabilities / flat_probabilities.sum(axis=1, keepdims=True)
+        flat_probabilities = flat_probabilities / flat_probabilities.sum(
+            axis=1, keepdims=True
+        )
 
         # Draw one uniform value per tile
         random_values = np.random.random(flat_probabilities.shape[0])
@@ -153,7 +177,9 @@ class StandardLandTerrainModel:
         # Map each interior coordinate to its sampled terrain type
         terrain_map = {
             (int(tile_x), int(tile_y)): self.flat_land_types[terrain_index]
-            for (tile_x, tile_y), terrain_index in zip(np.argwhere(interior_mask), terrain_indices)
+            for (tile_x, tile_y), terrain_index in zip(
+                np.argwhere(interior_mask), terrain_indices
+            )
         }
 
         return terrain_map
@@ -177,11 +203,12 @@ class StandardLandTerrainModel:
             dict[Coordinate, BaseTerrain]: An updated dictionary containing mountains (and orthogonal hills)
         """
         # Seed the mountain ranges
-        seed_coordinates = self._get_seed_coordinates(interior_mask, map_params.mountain_range_seed_prob)
+        seed_coordinates = self._get_seed_coordinates(
+            interior_mask, map_params.mountain_range_seed_prob
+        )
 
         # Grow a range from each seed
         for seed in seed_coordinates:
-
             # Skip seeds that an earlier range has already claimed
             if tile_assignments[seed].name == self.mountains.name:
                 continue
@@ -198,7 +225,9 @@ class StandardLandTerrainModel:
             )
 
             # Skirt the range with hills
-            self._assign_orthogonal_hills(range_coordinates, interior_mask, map_params, tile_assignments)
+            self._assign_orthogonal_hills(
+                range_coordinates, interior_mask, map_params, tile_assignments
+            )
 
         return tile_assignments
 
@@ -221,11 +250,12 @@ class StandardLandTerrainModel:
             dict[Coordinate, BaseTerrain]: An updated dictionary containing hills
         """
         # Seed the hill ranges
-        seed_coordinates = self._get_seed_coordinates(interior_mask, map_params.hill_range_seed_prob)
+        seed_coordinates = self._get_seed_coordinates(
+            interior_mask, map_params.hill_range_seed_prob
+        )
 
         # Grow a range from each seed
         for seed in seed_coordinates:
-
             # Skip seeds that are already mountains or hills
             if tile_assignments[seed].name in {self.mountains.name, self.hills.name}:
                 continue
@@ -265,12 +295,16 @@ class StandardLandTerrainModel:
         """
         # Consider every neighbour of every mountain in the range
         for mountain_coordinates in range_coordinates:
-            for hill_candidate in self._get_adjacent_coordinates(mountain_coordinates, map_params):
-
+            for hill_candidate in self._get_adjacent_coordinates(
+                mountain_coordinates, map_params
+            ):
                 # Limit to interior tiles that are not already mountains or hills
                 if not interior_mask[hill_candidate]:
                     continue
-                if tile_assignments[hill_candidate].name in {self.mountains.name, self.hills.name}:
+                if tile_assignments[hill_candidate].name in {
+                    self.mountains.name,
+                    self.hills.name,
+                }:
                     continue
 
                 # Assign the hill if the roll succeeds
@@ -301,7 +335,6 @@ class StandardLandTerrainModel:
 
         # Attempt a river from each hill tile
         for coordinates, terrain in tile_assignments.items():
-
             # Limit sources to hills that no other river has claimed
             if terrain.name != self.hills.name or coordinates in river_coordinates:
                 continue
@@ -311,12 +344,20 @@ class StandardLandTerrainModel:
                 continue
 
             # Trace a path to the sea, discarding the river if it cannot get there
-            river_path = self._trace_river_path(coordinates, classified_tiles, map_params, tile_assignments, river_coordinates)
+            river_path = self._trace_river_path(
+                coordinates,
+                classified_tiles,
+                map_params,
+                tile_assignments,
+                river_coordinates,
+            )
             if river_path is None:
                 continue
 
             # Convert the path into tiles and reserve its coordinates
-            river_tiles |= self._create_river_tiles(river_path, map_params, tile_assignments)
+            river_tiles |= self._create_river_tiles(
+                river_path, map_params, tile_assignments
+            )
             river_coordinates |= set(river_path)
 
         return river_tiles, river_coordinates
@@ -348,17 +389,22 @@ class StandardLandTerrainModel:
 
         # Extend the river one tile at a time
         while len(river_path) < self.max_river_length:
-
             # Get the candidate neighbours in random order, excluding tiles already in use
             blocked_coordinates = used_coordinates | set(river_path)
             candidates = [
                 candidate
-                for candidate in self._get_adjacent_coordinates(river_path[-1], map_params)
+                for candidate in self._get_adjacent_coordinates(
+                    river_path[-1], map_params
+                )
                 if candidate not in blocked_coordinates
             ]
 
             # Finish at the coast as soon as one is reachable
-            coastal_candidates = [candidate for candidate in candidates if classified_tiles.is_coastal[candidate]]
+            coastal_candidates = [
+                candidate
+                for candidate in candidates
+                if classified_tiles.is_coastal[candidate]
+            ]
             if coastal_candidates:
                 river_path.append(coastal_candidates[0])
                 return river_path
@@ -398,10 +444,11 @@ class StandardLandTerrainModel:
         river_tiles: set[BaseRural] = set()
 
         for path_index, coordinates in enumerate(river_path):
-
             # Work out which way the river enters and leaves this tile
             direction_in = (
-                self._get_direction(river_path[path_index - 1], coordinates, map_params) if path_index > 0 else None
+                self._get_direction(river_path[path_index - 1], coordinates, map_params)
+                if path_index > 0
+                else None
             )
             direction_out = (
                 self._get_direction(coordinates, river_path[path_index + 1], map_params)
@@ -412,14 +459,22 @@ class StandardLandTerrainModel:
             # Place a hill source facing the way the river leaves
             if direction_in is None:
                 river_tiles.add(
-                    self._create_tile(HillsRiverSourceTerrain, coordinates, DIRECTION_ROTATIONS[direction_out])
+                    self._create_tile(
+                        HillsRiverSourceTerrain,
+                        coordinates,
+                        DIRECTION_ROTATIONS[direction_out],
+                    )
                 )
                 continue
 
             # Place a coastal mouth facing back towards the inland tile that feeds it
             if direction_out is None:
                 river_tiles.add(
-                    self._create_tile(CoastRiverTerrain, coordinates, DIRECTION_ROTATIONS[self._reverse(direction_in)])
+                    self._create_tile(
+                        CoastRiverTerrain,
+                        coordinates,
+                        DIRECTION_ROTATIONS[self._reverse(direction_in)],
+                    )
                 )
                 continue
 
@@ -432,7 +487,9 @@ class StandardLandTerrainModel:
 
             # Place a corner tile joining the inflow and outflow edges
             terrain = self.river_corner_tile_map[tile_assignments[coordinates].name]
-            rotation = self._get_corner_rotation(self._reverse(direction_in), direction_out)
+            rotation = self._get_corner_rotation(
+                self._reverse(direction_in), direction_out
+            )
             river_tiles.add(self._create_tile(terrain, coordinates, rotation))
 
         return river_tiles
@@ -493,7 +550,12 @@ class StandardLandTerrainModel:
             water_directions = {
                 direction
                 for direction in ORTHOGONAL_DIRECTIONS
-                if (neighbour := self._move_orthogonally(coordinates, direction, map_params)) is not None
+                if (
+                    neighbour := self._move_orthogonally(
+                        coordinates, direction, map_params
+                    )
+                )
+                is not None
                 and water_mask[neighbour]
             }
 
@@ -521,11 +583,17 @@ class StandardLandTerrainModel:
             (classified_tiles.is_deep_ocean, DeepOceanTerrain),
         ):
             for tile_x, tile_y in np.argwhere(ocean_mask):
-                ocean_tiles.add(self._create_tile(terrain, (int(tile_x), int(tile_y)), self._get_tile_rotation()))
+                ocean_tiles.add(
+                    self._create_tile(
+                        terrain, (int(tile_x), int(tile_y)), self._get_tile_rotation()
+                    )
+                )
 
         return ocean_tiles
 
-    def _get_coast_terrain(self, water_directions: set[Direction]) -> tuple[BaseTerrain, int]:
+    def _get_coast_terrain(
+        self, water_directions: set[Direction]
+    ) -> tuple[BaseTerrain, int]:
         """
         Choose the coast terrain variant and rotation implied by the water around a tile
 
@@ -541,7 +609,10 @@ class StandardLandTerrainModel:
         # Collect the adjacent direction pairs that both face water
         corner_pairs = [
             (first, second)
-            for first, second in zip(ORTHOGONAL_DIRECTIONS, ORTHOGONAL_DIRECTIONS[1:] + ORTHOGONAL_DIRECTIONS[:1])
+            for first, second in zip(
+                ORTHOGONAL_DIRECTIONS,
+                ORTHOGONAL_DIRECTIONS[1:] + ORTHOGONAL_DIRECTIONS[:1],
+            )
             if first in water_directions and second in water_directions
         ]
 
@@ -552,7 +623,9 @@ class StandardLandTerrainModel:
 
         # Otherwise face the single water edge
         if water_directions:
-            facing_directions = sorted(water_directions, key=lambda direction: DIRECTION_ROTATIONS[direction])
+            facing_directions = sorted(
+                water_directions, key=lambda direction: DIRECTION_ROTATIONS[direction]
+            )
             return CoastTerrain, DIRECTION_ROTATIONS[facing_directions[0]]
 
         # Fall back to an arbitrary rotation for a coast tile with no water neighbour
@@ -593,7 +666,9 @@ class StandardLandTerrainModel:
             next_coordinates = None
 
             # Look for an adjacent interior tile that is not blocked
-            for candidate in self._get_adjacent_coordinates(range_coordinates[-1], map_params):
+            for candidate in self._get_adjacent_coordinates(
+                range_coordinates[-1], map_params
+            ):
                 if not interior_mask[candidate]:
                     continue
                 if tile_assignments[candidate].name in blocked_names:
@@ -612,7 +687,9 @@ class StandardLandTerrainModel:
 
         return range_coordinates
 
-    def _get_terrain_tile_prob(self, temperature: np.ndarray, terrain: BaseTerrain) -> np.ndarray:
+    def _get_terrain_tile_prob(
+        self, temperature: np.ndarray, terrain: BaseTerrain
+    ) -> np.ndarray:
         """
         Get the unscaled probability of each tile being each terrain
 
@@ -625,9 +702,13 @@ class StandardLandTerrainModel:
         Returns:
             np.ndarray: The unscaled probability of the terrain in each tile
         """
-        return 1 / np.clip(np.square(temperature - terrain.geography.temperature), 0.25, np.inf)
+        return 1 / np.clip(
+            np.square(temperature - terrain.geography.temperature), 0.25, np.inf
+        )
 
-    def _create_tile_temperature(self, interior_mask: np.ndarray, map_params: StandardMapParameters) -> np.ndarray:
+    def _create_tile_temperature(
+        self, interior_mask: np.ndarray, map_params: StandardMapParameters
+    ) -> np.ndarray:
         """
         Create a tile-level temperature
 
@@ -642,23 +723,31 @@ class StandardLandTerrainModel:
         # Assign a baseline temperature for each x coordinate, peaking at the equator
         map_size_x = map_params.map_size.size_x
         baseline_temperature = (
-            np.sin(np.pi * np.arange(map_size_x) / map_size_x) * map_params.world_temperature_amplitude
+            np.sin(np.pi * np.arange(map_size_x) / map_size_x)
+            * map_params.world_temperature_amplitude
             + map_params.world_temperature_centre
         )
 
         # Cool the land nearest the coast
         distance_to_water = self._get_distance_to_water(interior_mask, map_params)
-        coastal_cooling = map_params.water_cooling_max * np.exp(-distance_to_water / map_params.water_cooling_scale)
+        coastal_cooling = map_params.water_cooling_max * np.exp(
+            -distance_to_water / map_params.water_cooling_scale
+        )
 
         # Combine the baseline, the cooling and per-tile noise
         temperature_noise = np.random.normal(
-            scale=np.sqrt(map_params.world_temperature_variance), size=interior_mask.shape
+            scale=np.sqrt(map_params.world_temperature_variance),
+            size=interior_mask.shape,
         )
-        overall_tile_temperature = baseline_temperature[:, np.newaxis] - coastal_cooling + temperature_noise
+        overall_tile_temperature = (
+            baseline_temperature[:, np.newaxis] - coastal_cooling + temperature_noise
+        )
 
         return overall_tile_temperature
 
-    def _get_adjacent_coordinates(self, coordinates: Coordinate, map_params: StandardMapParameters) -> list[Coordinate]:
+    def _get_adjacent_coordinates(
+        self, coordinates: Coordinate, map_params: StandardMapParameters
+    ) -> list[Coordinate]:
         """
         Get the on-map orthogonal neighbours of a coordinate in a random order
 
@@ -685,10 +774,16 @@ class StandardLandTerrainModel:
         Returns:
             int: A random orthogonal rotation, or zero if rotation randomisation is disabled
         """
-        return self._get_random_orthogonal_rotation() if self.randomise_tile_rotation else 0
+        return (
+            self._get_random_orthogonal_rotation()
+            if self.randomise_tile_rotation
+            else 0
+        )
 
     @staticmethod
-    def _create_tile(terrain: BaseTerrain, coordinates: Coordinate, rotation: int) -> BaseRural:
+    def _create_tile(
+        terrain: BaseTerrain, coordinates: Coordinate, rotation: int
+    ) -> BaseRural:
         """
         Build a single tile
 
@@ -707,7 +802,9 @@ class StandardLandTerrainModel:
         )
 
     @staticmethod
-    def _get_seed_coordinates(interior_mask: np.ndarray, seed_prob: float) -> list[Coordinate]:
+    def _get_seed_coordinates(
+        interior_mask: np.ndarray, seed_prob: float
+    ) -> list[Coordinate]:
         """
         Sample seed coordinates from the interior of the islands
 
@@ -719,12 +816,16 @@ class StandardLandTerrainModel:
             list[Coordinate]: The sampled seed coordinates
         """
         # Sample the seeds within the interior only
-        is_seed = (np.random.random(size=interior_mask.shape) < seed_prob) & interior_mask
+        is_seed = (
+            np.random.random(size=interior_mask.shape) < seed_prob
+        ) & interior_mask
 
         return [(int(tile_x), int(tile_y)) for tile_x, tile_y in np.argwhere(is_seed)]
 
     @staticmethod
-    def _get_distance_to_water(interior_mask: np.ndarray, map_params: StandardMapParameters) -> np.ndarray:
+    def _get_distance_to_water(
+        interior_mask: np.ndarray, map_params: StandardMapParameters
+    ) -> np.ndarray:
         """
         Get the Euclidean distance between each land tile and the water (i.e. the nearest coastal tile)
 
@@ -749,10 +850,10 @@ class StandardLandTerrainModel:
         # Trim the padding back off
         if map_params.map_size.wrap_x:
             size_x = interior_mask.shape[0]
-            distance = distance[size_x:2 * size_x]
+            distance = distance[size_x : 2 * size_x]
         if map_params.map_size.wrap_y:
             size_y = interior_mask.shape[1]
-            distance = distance[:, size_y:2 * size_y]
+            distance = distance[:, size_y : 2 * size_y]
 
         return distance
 
@@ -810,7 +911,9 @@ class StandardLandTerrainModel:
         return (moved_x, moved_y)
 
     @classmethod
-    def _get_direction(cls, start: Coordinate, end: Coordinate, map_params: StandardMapParameters) -> Direction:
+    def _get_direction(
+        cls, start: Coordinate, end: Coordinate, map_params: StandardMapParameters
+    ) -> Direction:
         """
         Get the orthogonal direction from one coordinate to an adjacent coordinate
 
@@ -871,4 +974,8 @@ class StandardLandTerrainModel:
             raise ValueError(f"Directions {first} and {second} do not form a corner")
 
         # Take the direction that the other sits clockwise of
-        return first_rotation if (second_rotation - first_rotation) % 360 == 90 else second_rotation
+        return (
+            first_rotation
+            if (second_rotation - first_rotation) % 360 == 90
+            else second_rotation
+        )

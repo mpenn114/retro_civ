@@ -10,7 +10,7 @@ GrassTerrain = BaseTerrain(
     is_land=True,
     base_yield=AdditiveYield(food=2),
     base_image=TERRAIN_IMAGES.grass,
-    geography=TerrainGeography(temperature=10, rainfall=0.35)
+    geography=TerrainGeography(temperature=10, rainfall=0.35),
 )
 
 GrassRiverTerrain = BaseTerrain(
@@ -20,7 +20,7 @@ GrassRiverTerrain = BaseTerrain(
     is_land=True,
     base_yield=AdditiveYield(food=3, production=1, gold=1),
     base_image=TERRAIN_IMAGES.grass_river,
-    geography=None
+    geography=None,
 )
 
 GrassRiverCornerTerrain = GrassRiverTerrain.with_image(

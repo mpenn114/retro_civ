@@ -10,7 +10,7 @@ SnowTerrain = BaseTerrain(
     is_land=True,
     base_yield=AdditiveYield(),
     base_image=TERRAIN_IMAGES.snow,
-    geography=TerrainGeography(temperature=0, rainfall=0.2)
+    geography=TerrainGeography(temperature=0, rainfall=0.2),
 )
 
 __all__ = [SnowTerrain]

@@ -10,7 +10,7 @@ PlainsTerrain = BaseTerrain(
     is_land=True,
     base_yield=AdditiveYield(food=1, production=1),
     base_image=TERRAIN_IMAGES.plains,
-    geography=TerrainGeography(temperature=20, rainfall=0.2)
+    geography=TerrainGeography(temperature=20, rainfall=0.2),
 )
 
 PlainsRiverTerrain = BaseTerrain(

@@ -12,7 +12,7 @@ DesertTerrain = BaseTerrain(
     is_land=True,
     base_yield=AdditiveYield(),
     base_image=TERRAIN_IMAGES.desert,
-    geography=TerrainGeography(temperature=25, rainfall=0.0)
+    geography=TerrainGeography(temperature=25, rainfall=0.0),
 )
 
 __all__ = [DesertTerrain]
