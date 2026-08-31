@@ -21,7 +21,7 @@ class BaseTerrain(BaseModel):
     """
 
     # Accept the pygame surface holding the sprite, which pydantic cannot validate itself
-    model_config = ConfigDict(arbitrary_types_allowed=True)
+    model_config = ConfigDict(arbitrary_types_allowed=True, frozen=True)
 
     # Give the human-readable name of the terrain
     name: str
@@ -46,6 +46,18 @@ class BaseTerrain(BaseModel):
 
     # Give the geography of this terrain, or None if it is independent of geography
     geography: TerrainGeography | None = None
+
+    def __eq__(self, other):
+        if not isinstance(other, BaseTerrain):
+            return NotImplemented
+        return (
+            self.name == other.name
+        )
+
+    def __hash__(self):
+        return hash((
+            self.name,
+        ))
 
     def with_image(self, base_image: pygame.Surface) -> "BaseTerrain":
         """

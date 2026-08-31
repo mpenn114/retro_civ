@@ -560,7 +560,7 @@ class StandardLandTerrainModel:
                     )
                 )
                 is not None
-                and water_mask[neighbour]
+                and water_mask[neighbour[1], neighbour[0]]
             }
 
             # Choose the straight or corner variant and its rotation
@@ -748,7 +748,7 @@ class StandardLandTerrainModel:
             size=interior_mask.shape,
         )
         overall_tile_temperature = (
-            baseline_temperature[:, np.newaxis] - coastal_cooling + temperature_noise
+            baseline_temperature[np.newaxis,:] - coastal_cooling + temperature_noise
         )
 
         return overall_tile_temperature

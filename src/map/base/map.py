@@ -7,4 +7,4 @@ class BaseMap(BaseModel):
     Define the base configuration for the map
     """
 
-    tiles: set[BaseTile]
+    tiles: list[BaseTile]

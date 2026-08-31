@@ -41,3 +41,17 @@ class BaseCity(BaseModel):
             raise ValueError("Number of worked tiles cannot exceed population")
 
         return self
+
+    def describe(self) -> str:
+        """
+        Describe the city
+
+        Returns
+            str: The city description
+        """
+        return f"""
+            City:
+                Name: {self.name}
+                Population: {self.population}
+        """
+

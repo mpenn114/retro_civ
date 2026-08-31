@@ -40,3 +40,18 @@ class BaseTile(BaseModel):
             raise ValueError("City details must be provided for cities")
 
         return self
+
+    def describe(self):
+        """
+        Desribe the tile
+
+        Returns:
+            str: A description of the tile
+        """
+        return f"""
+            Tile:
+                {self.city_details.describe() if self.is_city else "Rural"}
+                {self.unit_details.describe() if self.unit_details is not None else "Unoccupied"}
+                {self.rural_details.describe()}
+
+        """
