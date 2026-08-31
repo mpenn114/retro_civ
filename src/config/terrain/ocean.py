@@ -10,6 +10,7 @@ DeepOceanTerrain = BaseTerrain(
     is_land=True,
     base_yield=AdditiveYield(food=2),
     base_image=TERRAIN_IMAGES.deep_ocean,
+    geography=None,
 )
 
 ShallowOceanTerrain = BaseTerrain(
@@ -19,6 +20,7 @@ ShallowOceanTerrain = BaseTerrain(
     is_land=True,
     base_yield=AdditiveYield(food=2),
     base_image=TERRAIN_IMAGES.shallow_ocean,
+    geography=None,
 )
 
 __all__ = [DeepOceanTerrain, ShallowOceanTerrain]

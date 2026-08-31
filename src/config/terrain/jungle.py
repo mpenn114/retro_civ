@@ -1,4 +1,4 @@
-from .base import BaseTerrain
+from .base import BaseTerrain, TerrainGeography
 from src.config.base_yield.base import AdditiveYield
 from src.art import TERRAIN_IMAGES
 
@@ -11,6 +11,7 @@ JungleTerrain = BaseTerrain(
     base_yield=AdditiveYield(food=2, production=1, gold=1),
     base_image=TERRAIN_IMAGES.jungle,
     blocks=True,
+    geography=TerrainGeography(temperature=15, rainfall=0.75),
 )
 
 JungleRiverTerrain = BaseTerrain(
