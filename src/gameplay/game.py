@@ -6,6 +6,7 @@ from src.map.base.map_size import BaseMapSize
 from src.map.generators.standard.generator import StandardMapGenerator
 from src.map.generators.standard.params import StandardMapParameters
 
+
 class RetroCiv:
     TILE_SIZE_PX: int = 64
     MAP_SIZE_X: int = 100
@@ -54,7 +55,9 @@ class RetroCiv:
         slider_y = self.screen_h - self.SLIDER_H - self.SLIDER_PADDING
         self.slider_rect = pygame.Rect(slider_x, slider_y, self.SLIDER_W, self.SLIDER_H)
 
-        self.quit_btn_rect = pygame.Rect(self.screen_w - 100 - self.SLIDER_PADDING, self.SLIDER_PADDING, 100, 32)
+        self.quit_btn_rect = pygame.Rect(
+            self.screen_w - 100 - self.SLIDER_PADDING, self.SLIDER_PADDING, 100, 32
+        )
 
     def _build_tiled_surface(self):
         self.copies_x = 2 if self.wrap_x else 1
@@ -87,8 +90,15 @@ class RetroCiv:
     def _handle_slider_event(self, event):
         if event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
             knob_x = self._slider_knob_x()
-            knob_rect = pygame.Rect(knob_x - self.SLIDER_KNOB_R, self.slider_rect.centery - self.SLIDER_KNOB_R, self.SLIDER_KNOB_R * 2, self.SLIDER_KNOB_R * 2)
-            if knob_rect.collidepoint(event.pos) or self.slider_rect.collidepoint(event.pos):
+            knob_rect = pygame.Rect(
+                knob_x - self.SLIDER_KNOB_R,
+                self.slider_rect.centery - self.SLIDER_KNOB_R,
+                self.SLIDER_KNOB_R * 2,
+                self.SLIDER_KNOB_R * 2,
+            )
+            if knob_rect.collidepoint(event.pos) or self.slider_rect.collidepoint(
+                event.pos
+            ):
                 self.dragging_slider = True
                 self._zoom_to_slider(event.pos[0])
         elif event.type == pygame.MOUSEBUTTONUP and event.button == 1:
@@ -185,14 +195,20 @@ class RetroCiv:
 
         knob_x = self._slider_knob_x()
         knob_center = (int(knob_x), self.slider_rect.centery)
-        pygame.draw.circle(self.screen, (220, 220, 220), knob_center, self.SLIDER_KNOB_R)
+        pygame.draw.circle(
+            self.screen, (220, 220, 220), knob_center, self.SLIDER_KNOB_R
+        )
 
         font = pygame.font.SysFont(None, 18)
         label = font.render(f"{self.zoom:.1f}x", True, (255, 255, 255))
-        self.screen.blit(label, (self.slider_rect.left - 38, self.slider_rect.centery - 9))
+        self.screen.blit(
+            label, (self.slider_rect.left - 38, self.slider_rect.centery - 9)
+        )
 
     def _render_quit_button(self):
-        bg = pygame.Surface((self.quit_btn_rect.w, self.quit_btn_rect.h), pygame.SRCALPHA)
+        bg = pygame.Surface(
+            (self.quit_btn_rect.w, self.quit_btn_rect.h), pygame.SRCALPHA
+        )
         bg.fill((180, 40, 40, 200))
         self.screen.blit(bg, self.quit_btn_rect.topleft)
         font = pygame.font.SysFont(None, 22)

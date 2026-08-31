@@ -546,7 +546,6 @@ class StandardLandTerrainModel:
         for tile_x, tile_y in np.argwhere(classified_tiles.is_coastal):
             coordinates = (int(tile_x), int(tile_y))
 
-
             # Skip coastal tiles that a river mouth already occupies
             if coordinates in river_coordinates:
                 continue
@@ -983,9 +982,11 @@ class StandardLandTerrainModel:
             raise ValueError(f"Directions {first} and {second} do not form a corner")
 
         # Take the direction that the other sits clockwise of
-        return ((
-            first_rotation
-            if (second_rotation - first_rotation) % 360 == 90
-            else second_rotation
-        ) + 90
-) % 360
+        return (
+            (
+                first_rotation
+                if (second_rotation - first_rotation) % 360 == 90
+                else second_rotation
+            )
+            + 90
+        ) % 360

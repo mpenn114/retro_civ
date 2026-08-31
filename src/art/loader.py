@@ -70,6 +70,7 @@ def _load_image_set[ImageSet](image_set: type[ImageSet], assets_path: Path) -> I
         }
     )
 
+
 import os
 import pygame
 
