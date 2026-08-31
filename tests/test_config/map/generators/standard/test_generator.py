@@ -16,3 +16,5 @@ def test_standard_generator():
 
     # Check multiple terrain types
     assert len({tile.rural_details.terrain.name for tile in generated_map.tiles}) > 1
+
+    assert False

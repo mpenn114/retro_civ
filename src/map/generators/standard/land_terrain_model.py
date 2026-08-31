@@ -41,7 +41,7 @@ EAST: Direction = (1, 0)
 SOUTH: Direction = (0, -1)
 WEST: Direction = (-1, 0)
 ORTHOGONAL_DIRECTIONS: tuple[Direction, ...] = (NORTH, EAST, SOUTH, WEST)
-DIRECTION_ROTATIONS: dict[Direction, int] = {NORTH: 0, EAST: 90, SOUTH: 180, WEST: 270}
+DIRECTION_ROTATIONS: dict[Direction, int] = {NORTH: 0, EAST: 270, SOUTH: 180, WEST: 90}
 
 
 class StandardLandTerrainModel:
@@ -546,6 +546,7 @@ class StandardLandTerrainModel:
         for tile_x, tile_y in np.argwhere(classified_tiles.is_coastal):
             coordinates = (int(tile_x), int(tile_y))
 
+
             # Skip coastal tiles that a river mouth already occupies
             if coordinates in river_coordinates:
                 continue
@@ -560,7 +561,7 @@ class StandardLandTerrainModel:
                     )
                 )
                 is not None
-                and water_mask[neighbour[1], neighbour[0]]
+                and water_mask[neighbour[0], neighbour[1]]
             }
 
             # Choose the straight or corner variant and its rotation
@@ -905,15 +906,15 @@ class StandardLandTerrainModel:
         """
         # Wrap or reject the move on each axis independently
         moved_x = coordinates[0] + direction[0]
-        if map_params.map_size.wrap_x:
-            moved_x %= map_params.map_size.size_x
-        elif not 0 <= moved_x < map_params.map_size.size_x:
+        if map_params.map_size.wrap_y:
+            moved_x %= map_params.map_size.size_y
+        elif not 0 <= moved_x < map_params.map_size.size_y:
             return None
 
         moved_y = coordinates[1] + direction[1]
-        if map_params.map_size.wrap_y:
-            moved_y %= map_params.map_size.size_y
-        elif not 0 <= moved_y < map_params.map_size.size_y:
+        if map_params.map_size.wrap_x:
+            moved_y %= map_params.map_size.size_x
+        elif not 0 <= moved_y < map_params.map_size.size_x:
             return None
 
         return (moved_x, moved_y)
@@ -982,8 +983,9 @@ class StandardLandTerrainModel:
             raise ValueError(f"Directions {first} and {second} do not form a corner")
 
         # Take the direction that the other sits clockwise of
-        return (
+        return ((
             first_rotation
             if (second_rotation - first_rotation) % 360 == 90
             else second_rotation
-        )
+        ) + 90
+) % 360

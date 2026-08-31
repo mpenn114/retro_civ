@@ -54,6 +54,8 @@ class RetroCiv:
         slider_y = self.screen_h - self.SLIDER_H - self.SLIDER_PADDING
         self.slider_rect = pygame.Rect(slider_x, slider_y, self.SLIDER_W, self.SLIDER_H)
 
+        self.quit_btn_rect = pygame.Rect(self.screen_w - 100 - self.SLIDER_PADDING, self.SLIDER_PADDING, 100, 32)
+
     def _build_tiled_surface(self):
         self.copies_x = 2 if self.wrap_x else 1
         self.copies_y = 2 if self.wrap_y else 1
@@ -110,6 +112,9 @@ class RetroCiv:
                 elif event.key == pygame.K_MINUS:
                     self._zoom_out()
             self._handle_slider_event(event)
+            if event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
+                if self.quit_btn_rect.collidepoint(event.pos):
+                    self.running = False
 
     def _handle_mouse_scroll(self, event):
         mods = pygame.key.get_mods()
@@ -171,6 +176,7 @@ class RetroCiv:
         )
         self.screen.blit(scaled, (0, 0))
         self._render_slider()
+        self._render_quit_button()
 
     def _render_slider(self):
         bg = pygame.Surface((self.SLIDER_W, self.SLIDER_H), pygame.SRCALPHA)
@@ -184,6 +190,15 @@ class RetroCiv:
         font = pygame.font.SysFont(None, 18)
         label = font.render(f"{self.zoom:.1f}x", True, (255, 255, 255))
         self.screen.blit(label, (self.slider_rect.left - 38, self.slider_rect.centery - 9))
+
+    def _render_quit_button(self):
+        bg = pygame.Surface((self.quit_btn_rect.w, self.quit_btn_rect.h), pygame.SRCALPHA)
+        bg.fill((180, 40, 40, 200))
+        self.screen.blit(bg, self.quit_btn_rect.topleft)
+        font = pygame.font.SysFont(None, 22)
+        label = font.render("Quit", True, (255, 255, 255))
+        label_rect = label.get_rect(center=self.quit_btn_rect.center)
+        self.screen.blit(label, label_rect)
 
     def run(self):
         while self.running:
