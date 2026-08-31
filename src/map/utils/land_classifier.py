@@ -1,4 +1,4 @@
-from pydantic import BaseModel
+from pydantic import BaseModel, ConfigDict
 import numpy as np
 import shapely
 from shapely import Polygon
@@ -15,6 +15,9 @@ class ClassifiedTiles(BaseModel):
     is_coastal: np.ndarray
     is_shallow_ocean: np.ndarray
     is_deep_ocean: np.ndarray
+
+    # Allow np.ndarrays
+    model_config = ConfigDict(arbitrary_types_allowed=True)
 
 
 class LandClassifier:

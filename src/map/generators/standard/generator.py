@@ -53,7 +53,7 @@ class StandardMapGenerator(BaseMapGenerator):
 
         # Create the map
         return BaseMap(
-            tiles={BaseTile(rural_details=rural) for rural in generated_land}
+            tiles=[BaseTile(rural_details=rural) for rural in generated_land]
         )
 
     def _generate_islands(self) -> list[Polygon]:

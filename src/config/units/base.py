@@ -1,4 +1,4 @@
-from pydantic import BaseModel, Field, model_validator
+from pydantic import BaseModel, Field, model_validator, ConfigDict
 from src.config.requirements.base import BaseRequirement
 from src.config.civs import BaseCiv, Barbarians
 import pygame
@@ -107,3 +107,20 @@ class BaseUnit(BaseModel):
 
     # Define the obsolecence requirement for the unit
     obsolecence_requirement: BaseRequirement | None = None
+
+    # Accept the pygame surface holding the sprite, which pydantic cannot validate itself
+    model_config = ConfigDict(arbitrary_types_allowed=True)
+
+    def describe(self) -> str:
+        """
+        Desribe the unit
+
+        Returns:
+            str: The unit description
+        """
+        return f"""
+            Unit:
+                Name: {self.name}
+                Civilization: {self.unit_status.civilization}
+                Health: {self.unit_status.health}
+        """
