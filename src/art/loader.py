@@ -70,7 +70,14 @@ def _load_image_set[ImageSet](image_set: type[ImageSet], assets_path: Path) -> I
         }
     )
 
+import os
+import pygame
 
+
+os.environ["SDL_VIDEODRIVER"] = "dummy"
+
+pygame.init()
+pygame.display.set_mode((1, 1))
 TERRAIN_IMAGES = _load_image_set(TerrainImages, TERRAIN_ASSETS_PATH)
 
 UNIT_IMAGES = _load_image_set(UnitImages, UNIT_ASSETS_PATH)
