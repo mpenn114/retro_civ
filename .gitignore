@@ -8,3 +8,5 @@ env/
 coverage.xml
 .coverage
 .coverage.*
+*.docx
+
